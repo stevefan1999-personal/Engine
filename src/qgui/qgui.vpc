@@ -1,0 +1,43 @@
+//-----------------------------------------------------------------------------
+//	VGUI_DLL.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Macro SRCDIR		"..\.."
+$Macro OUTBINDIR	"$BINDEFAULT"
+$Macro OUTBINNAME	"qgui"
+
+$include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;..\include"
+		$PreprocessorDefinitions		"$BASE;"
+	}
+}
+
+$Project "QGui"
+{
+	$Folder	"Source Files"
+	{
+		$File	"qgui.cpp"
+	}
+
+	$Folder	"Header Files"
+	{
+		$File	"qgui.h"
+	}
+
+	$Folder	"Public Header Files"
+	{
+		$File	"$SRCDIR\public\qgui\Iqgui.h"
+	}
+
+	$Folder "Link Libraries"
+	{
+		$Lib tier2
+	}
+}

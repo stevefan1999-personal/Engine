@@ -445,6 +445,9 @@ $Group "binaries"
 	"vvis_dll"
 	"vvis_launcher"
 	"testprocess"
+	
+	//Quiver's projects
+	"qgui"
 }
 
 $Group "libraries" "core"
@@ -499,6 +502,9 @@ $Group "core"
 	"filesystem_stdio"
 	"filesystem_steam"
 	"mysql_wrapper"
+	
+	//Quiver's projects
+	"qgui"
 }
 
 $Group "unittests"

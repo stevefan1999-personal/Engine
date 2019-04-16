@@ -1348,3 +1348,9 @@ $Project "VStdlibUnitTest"
 {
 	"unittests\VStdlibTest\vstdlibtest.vpc"
 }
+
+//Quiver's projects
+$Project "qgui"
+{
+	"qgui\qgui.vpc"
+}
