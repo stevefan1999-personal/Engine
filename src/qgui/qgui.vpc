@@ -1,10 +1,10 @@
 //-----------------------------------------------------------------------------
-//	VGUI_DLL.VPC
+//	QGUI.VPC
 //
 //	Project Script
 //-----------------------------------------------------------------------------
 
-$Macro SRCDIR		"..\.."
+$Macro SRCDIR		".."
 $Macro OUTBINDIR	"$BINDEFAULT"
 $Macro OUTBINNAME	"qgui"
 
@@ -14,7 +14,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories	"$BASE;..\include"
+		$AdditionalIncludeDirectories	"$BASE;"
 		$PreprocessorDefinitions		"$BASE;"
 	}
 }
