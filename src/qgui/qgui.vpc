@@ -41,5 +41,8 @@ $Project "QGui"
 	$Folder "Link Libraries"
 	{
 		$Lib tier2
+		$Lib Ultralight
+		$Lib UltralightCore
+		$Lib WebCore
 	}
 }
