@@ -44,6 +44,7 @@
 #include "filesystem/IQueuedLoader.h"
 #include "reslistgenerator.h"
 #include "tier1/fmtstr.h"
+#include "qgui/Iqgui.h"
 
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
@@ -589,6 +590,7 @@ bool CSourceAppSystemGroup::Create()
 		// NOTE: This has to occur before vgui2.dll so it replaces vgui2's surface implementation
 		{ "vguimatsurface.dll",		VGUI_SURFACE_INTERFACE_VERSION },
 		{ "vgui2.dll",				VGUI_IVGUI_INTERFACE_VERSION },
+		{ "qgui.dll",				QGUI_INTERFACE_VERSION },
 		{ "engine.dll",				VENGINE_LAUNCHER_API_VERSION },
 
 		{ "", "" }					// Required to terminate the list

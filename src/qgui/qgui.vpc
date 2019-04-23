@@ -24,11 +24,13 @@ $Project "QGui"
 	$Folder	"Source Files"
 	{
 		$File	"qgui.cpp"
+		$File	"qgui_filesystem.cpp"
 	}
 
 	$Folder	"Header Files"
 	{
 		$File	"qgui.h"
+		$File	"qgui_filesystem.h"
 	}
 
 	$Folder	"Public Header Files"
