@@ -25,12 +25,14 @@ $Project "QGui"
 	{
 		$File	"qgui.cpp"
 		$File	"qgui_filesystem.cpp"
+		$File	"qgui_gpudriver.cpp"
 	}
 
 	$Folder	"Header Files"
 	{
 		$File	"qgui.h"
 		$File	"qgui_filesystem.h"
+		$File	"qgui_gpudriver.h"
 	}
 
 	$Folder	"Public Header Files"

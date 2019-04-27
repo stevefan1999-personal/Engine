@@ -3,6 +3,7 @@
 #include "tier2/tier2.h"
 #include "Ultralight/Ultralight.h"
 #include "qgui_filesystem.h"
+#include "qgui_gpudriver.h"
 
 class QGui : public CBaseAppSystem<IQGui>
 {
@@ -32,6 +33,7 @@ InitReturnVal_t QGui::Init()
 	gRenderer = Renderer::Create();
 	Ref<View> view = gRenderer->CreateView(800, 600, true);
 	Platform::instance().set_file_system( &gQGuiFileSystem );
+	Platform::instance().set_gpu_driver( &gQGuiGPUDriver );
 	view->LoadURL( "file:///resource/index.html" );
 	return INIT_OK;
 }
