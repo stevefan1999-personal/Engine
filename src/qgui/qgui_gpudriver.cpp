@@ -1,7 +1,6 @@
 //========= Quiver - Ms ============//
 #include "qgui_gpudriver.h"
 #include "tier2/tier2.h"
-#include "materialsystem/texturemanager.h"
 
 void QGuiGPUDriver::BeginSynchronize()
 {
@@ -13,7 +12,7 @@ void QGuiGPUDriver::EndSynchronize()
 
 uint32_t QGuiGPUDriver::NextTextureId()
 {
-	texturemanag
+	return uint32_t();
 }
 
 void QGuiGPUDriver::CreateTexture( uint32_t texture_id, Ref<Bitmap> bitmap )

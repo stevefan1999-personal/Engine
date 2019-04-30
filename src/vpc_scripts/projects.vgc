@@ -1274,3 +1274,7 @@ $Project "qgui"
 {
 	"qgui\qgui.vpc"
 }
+$Project "appidlink"
+{
+	"utils\appidlink\appidlink.vpc"
+}
