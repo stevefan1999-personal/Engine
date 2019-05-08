@@ -4,9 +4,8 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VAttractScreen.h"
-//#include "VSignInDialog.h"
+#include "VSignInDialog.h"
 #include "EngineInterface.h"
 #include "inputsystem/iinputsystem.h"
 #include "vgui_controls/Label.h"
@@ -173,8 +172,10 @@ public:
 
 void CAttractScreenDeviceSelector::OnDeviceFail( FailReason_t eReason )
 {
-	XBX_SetStorageDeviceId( GetCtrlrIndex() );
+	XBX_SetStorageDeviceId( GetCtrlrIndex(), XBX_STORAGE_DECLINED );
 
+	g_pMatchFramework->GetEventsSubscription()->BroadcastEvent( new KeyValues( "OnProfileStorageAvailable", "iController", GetCtrlrIndex() ) );
+	
 	if ( CAttractScreen* attractScreen = static_cast< CAttractScreen* >( CBaseModPanel::GetSingleton().GetWindow( WT_ATTRACTSCREEN ) ) )
 	{
 		attractScreen->ReportDeviceFail( eReason );
@@ -193,7 +194,7 @@ void CAttractScreenDeviceSelector::OnDeviceSelected()
 		Msg( "[GAMEUI] CAttractScreen::CBCK=StartGame_Storage_Selected - pri=%d, sec=%d, stage=%d\n", s_idPrimaryUser, s_idSecondaryUser, s_eStorageUI );
 	}
 
-	//CUIGameData::Get()->UpdateWaitPanel( "#L4D360UI_WaitScreen_SignOnSucceded" );
+	CUIGameData::Get()->UpdateWaitPanel( "#GameUI_WaitScreen_SignOnSucceded" );
 }
 
 void CAttractScreenDeviceSelector::AfterDeviceMounted()
@@ -202,6 +203,8 @@ void CAttractScreenDeviceSelector::AfterDeviceMounted()
 	{
 		Msg( "[GAMEUI] CAttractScreen::CBCK=StartGame_Storage_Loaded - pri=%d, sec=%d, stage=%d\n", s_idPrimaryUser, s_idSecondaryUser, s_eStorageUI );
 	}
+
+	g_pMatchFramework->GetEventsSubscription()->BroadcastEvent( new KeyValues( "OnProfileStorageAvailable", "iController", GetCtrlrIndex() ) );
 
 	if ( CAttractScreen* attractScreen = static_cast< CAttractScreen* >( CBaseModPanel::GetSingleton().GetWindow( WT_ATTRACTSCREEN ) ) )
 	{
@@ -272,11 +275,17 @@ CAttractScreen::CAttractScreen( Panel *parent, const char *panelName ):
 		// in development, prevent attract mode
 		m_AttractDemoTimeout = 0;
 	}
+
+	// Subscribe for the events
+	g_pMatchFramework->GetEventsSubscription()->Subscribe( this );
 }
 
 CAttractScreen::~CAttractScreen()
 {
 	delete m_pPressStartShadowlbl;
+
+	// Unsubscribe for the events
+	g_pMatchFramework->GetEventsSubscription()->Unsubscribe( this );
 }
 
 void CAttractScreen::ResetAttractDemoTimeout()
@@ -684,7 +693,7 @@ void CAttractScreen::OnOpen()
 
 	if ( s_eAttractMode == ATTRACT_ACCEPTINVITE )
 	{
-	//	CUIGameData::Get()->OpenWaitScreen( "#L4D360UI_WaitScreen_JoiningParty" );
+		CUIGameData::Get()->OpenWaitScreen( "#GameUI_WaitScreen_JoiningParty" );
 	}
 }
 
@@ -803,8 +812,8 @@ void CAttractScreen::OnEvent( KeyValues *pEvent )
 
 						GenericConfirmation::Data_t data;
 
-						data.pWindowTitle = "#L4D360UI_MsgBx_NeedTwoProfilesC";
-						data.pMessageText = "#L4D360UI_MsgBx_NeedTwoProfilesTxt";
+						data.pWindowTitle = "#GameUI_MsgBx_NeedTwoProfilesC";
+						data.pMessageText = "#GameUI_MsgBx_NeedTwoProfilesTxt";
 						data.bOkButtonEnabled = true;
 
 						m_msgData = confirmation->SetUsageData(data);
@@ -1058,6 +1067,9 @@ void CAttractScreen::ShowSignInDialog( int iPrimaryUser, int iSecondaryUser, Bla
 	// and determines who's config we load, etc.
 	g_pInputSystem->SetPrimaryUserId( iPrimaryUser );
 
+	// Lock the UI convar options to a particular splitscreen player slot
+	SetGameUIActiveSplitScreenPlayerSlot( 0 );
+
 	HidePressStart();
 	m_bHidePressStart = true;
 
@@ -1098,8 +1110,8 @@ void CAttractScreen::StartGameWithTemporaryProfile_Stage1()
 
 	GenericConfirmation::Data_t data;
 
-	data.pWindowTitle = "#L4D360UI_MsgBx_ConfirmGuestC";
-	data.pMessageText = "#L4D360UI_MsgBx_ConfirmGuestTxt";
+	data.pWindowTitle = "#GameUI_MsgBx_ConfirmGuestC";
+	data.pMessageText = "#GameUI_MsgBx_ConfirmGuestTxt";
 	data.bOkButtonEnabled = true;
 	data.bCancelButtonEnabled = true;
 
@@ -1243,8 +1255,8 @@ bool CAttractScreen::OfferPromoteToLiveGuest()
 
 		GenericConfirmation::Data_t data;
 
-		data.pWindowTitle = "#L4D360UI_MsgBx_NeedLiveSplitscreenC";
-		data.pMessageText = "#L4D360UI_MsgBx_NeedLiveSplitscreenTxt";
+		data.pWindowTitle = "#GameUI_MsgBx_NeedLiveSplitscreenC";
+		data.pMessageText = "#GameUI_MsgBx_NeedLiveSplitscreenTxt";
 		data.bOkButtonEnabled = true;
 		data.bCancelButtonEnabled = true;
 
@@ -1363,9 +1375,9 @@ static void StorageSelectAgain()
 	{
 		attractScreen->OnMsgResetCancelFn();
 
-		//int iSlot = s_eStorageUI - 1;
-		int iContorller = 0;
-		XBX_SetStorageDeviceId( iContorller );
+		int iSlot = s_eStorageUI - 1;
+		int iContorller = XBX_GetUserId( iSlot );
+		XBX_SetStorageDeviceId( iContorller, XBX_INVALID_STORAGE_ID );
 
 		switch ( s_eStorageUI )
 		{
@@ -1405,17 +1417,17 @@ void CAttractScreen::ReportDeviceFail( ISelectStorageDeviceClient::FailReason_t 
 	{
 	case ISelectStorageDeviceClient::FAIL_ERROR:
 	case ISelectStorageDeviceClient::FAIL_NOT_SELECTED:
-		data.pWindowTitle = "#L4D360UI_MsgBx_AttractDeviceNoneC";
-		data.pMessageText = "#L4D360UI_MsgBx_AttractDeviceNoneTxt";
+		data.pWindowTitle = "#GameUI_MsgBx_AttractDeviceNoneC";
+		data.pMessageText = "#GameUI_MsgBx_AttractDeviceNoneTxt";
 		break;
 	case ISelectStorageDeviceClient::FAIL_FULL:
-		data.pWindowTitle = "#L4D360UI_MsgBx_AttractDeviceFullC";
-		data.pMessageText = "#L4D360UI_MsgBx_AttractDeviceFullTxt";
+		data.pWindowTitle = "#GameUI_MsgBx_AttractDeviceFullC";
+		data.pMessageText = "#GameUI_MsgBx_AttractDeviceFullTxt";
 		break;
 	case ISelectStorageDeviceClient::FAIL_CORRUPT:
 	default:
-		data.pWindowTitle = "#L4D360UI_MsgBx_AttractDeviceCorruptC";
-		data.pMessageText = "#L4D360UI_MsgBx_AttractDeviceCorruptTxt";
+		data.pWindowTitle = "#GameUI_MsgBx_AttractDeviceCorruptC";
+		data.pMessageText = "#GameUI_MsgBx_AttractDeviceCorruptTxt";
 		break;
 	}
 

@@ -12,10 +12,6 @@
 
 namespace BaseModUI {
 
-
-#define SAVE_FILENAME			"autosave.sav"
-#define SAVE_DIRNAME				"SAVE"
-
 class MainMenu : public CBaseModFrame, public IBaseModFrameListener, public FlyoutMenuListener
 {
 	DECLARE_CLASS_SIMPLE( MainMenu, CBaseModFrame );
@@ -48,16 +44,11 @@ protected:
 
 	void	Demo_DisableButtons( void );
 
-private:	
-	static void AcceptNewGameCallback();
-	static void AcceptSaveOverCallback();
-	static void AcceptLoadCallback();
+private:
 	static void AcceptCommentaryRulesCallback();
 	static void AcceptSplitscreenDisableCallback();
 	static void AcceptVersusSoftLockCallback();
 	static void AcceptQuitGameCallback();
-
-	bool CheckSaveFile();
 	void SetFooterState();
 
 	enum MainMenuQuickJoinHelpText

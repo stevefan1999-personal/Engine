@@ -4,26 +4,22 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VMainMenu.h"
 #include "EngineInterface.h"
 #include "VFooterPanel.h"
 #include "VHybridButton.h"
 #include "VFlyoutMenu.h"
 #include "vGenericConfirmation.h"
-#include "VAddons.h"
-//#include "VQuickJoin.h"
-//#include "basemodpanel.h"
-//#include "UIGameData.h"
-//#include "VGameSettings.h"
-//#include "VSteamCloudConfirmation.h"
+#include "basemodpanel.h"
+#include "UIGameData.h"
+#include "VGameSettings.h"
+#include "VSteamCloudConfirmation.h"
 #include "vaddonassociation.h"
 
-//#include "VSignInDialog.h"
+#include "VSignInDialog.h"
 #include "VGuiSystemModuleLoader.h"
-//#include "VAttractScreen.h"
+#include "VAttractScreen.h"
 #include "gamemodes.h"
-#include "FileSystem.h"
 
 #include "vgui/ILocalize.h"
 #include "vgui_controls/Label.h"
@@ -49,33 +45,21 @@ using namespace BaseModUI;
 
 //=============================================================================
 static ConVar connect_lobby( "connect_lobby", "", FCVAR_HIDDEN, "Sets the lobby ID to connect to on start." );
-static ConVar ui_old_options_menu( "ui_old_options_menu", "0", FCVAR_NONE, "Brings up the old tabbed options dialog from Keyboard/Mouse when set to 1." );
+static ConVar ui_old_options_menu( "ui_old_options_menu", "0", FCVAR_HIDDEN, "Brings up the old tabbed options dialog from Keyboard/Mouse when set to 1." );
 static ConVar ui_play_online_browser( "ui_play_online_browser",
-#if defined( _DEMO )
+#if defined( _DEMO ) && !defined( _X360 )
 									 "0",
 									 FCVAR_NONE,
 #else
 									 "1",
-									 FCVAR_NONE,
+									 FCVAR_RELEASE,
 #endif
 									 "Whether play online displays a browser or plain search dialog." );
 
+ConVar asw_show_all_singleplayer_maps( "asw_show_all_singleplayer_maps", "0", FCVAR_NONE, "If set, offline practice option on the main menu will show all maps." );
+
 void Demo_DisableButton( Button *pButton );
-//void OpenGammaDialog( VPANEL parent );
-
-
-void GetPrimaryModDirectoryForMenu( char *pcModPath, int nSize )
-{
-	g_pFullFileSystem->GetSearchPath( "MOD", false, pcModPath, nSize );
-
-	// It's possible that we have multiple MOD directories if there is DLC installed. If that's the case get the last one
-	// in the semi-colon delimited list
-	char *pSemi = V_strrchr( pcModPath, ';');
-	if ( pSemi )
-	{
-		V_strncpy( pcModPath, ++pSemi, MAX_PATH );
-	}
-}
+void OpenGammaDialog( VPANEL parent );
 
 //=============================================================================
 MainMenu::MainMenu( Panel *parent, const char *panelName ):
@@ -88,374 +72,392 @@ MainMenu::MainMenu( Panel *parent, const char *panelName ):
 
 	SetLowerGarnishEnabled( true );
 
-	// ?
 	AddFrameListener( this );
 
 	m_iQuickJoinHelpText = MMQJHT_NONE;
 
 	SetDeleteSelfOnClose( true );
-
-	SetCloseButtonVisible( false );
-
-	// what is this
-	SetConsoleStylePanel( true );
-
-	//vgui::Button SetUseCaptureMouse( true );
 }
 
 //=============================================================================
 MainMenu::~MainMenu()
 {
 	RemoveFrameListener( this );
-}
 
-const char *GetRandomQuitString()
-{
-	const char *string;
-
-	int randomizer = RandomInt(0, 32);
-
-	switch (randomizer)
-	{
-	default:  string = "#QuitMessage0"; break;
-	case 0: string = "#QuitMessage0"; break;
-	case 1: string = "#QuitMessage1"; break;
-	case 2: string = "#QuitMessage2"; break;
-	case 3: string = "#QuitMessage3"; break;
-	case 4: string = "#QuitMessage4"; break;
-	case 5: string = "#QuitMessage5"; break;
-	case 6: string = "#QuitMessage6"; break;
-	case 7: string = "#QuitMessage7"; break;
-	case 8: string = "#QuitMessage8"; break;
-	case 9: string = "#QuitMessage9"; break;
-	case 10: string = "#QuitMessage10"; break;
-	case 11: string = "#QuitMessage11"; break;
-	case 12: string = "#QuitMessage12"; break;
-	case 13: string = "#QuitMessage13"; break;
-	case 14: string = "#QuitMessage14"; break;
-	case 15: string = "#QuitMessage15"; break;
-	case 16: string = "#QuitMessage16"; break;
-	case 17: string = "#QuitMessage17"; break;
-	case 18: string = "#QuitMessage18"; break;
-	case 19: string = "#QuitMessage19"; break;
-	case 20: string = "#QuitMessage20"; break;
-	case 21: string = "#QuitMessage21"; break;
-	case 22: string = "#QuitMessage22"; break;
-	case 23: string = "#QuitMessage23"; break;
-	case 24: string = "#QuitMessage24"; break;
-	case 25: string = "#QuitMessage25"; break;
-	case 26: string = "#QuitMessage26"; break;
-	case 27: string = "#QuitMessage27"; break;
-	case 28: string = "#QuitMessage28"; break;
-	case 29: string = "#QuitMessage29"; break;
-	case 30: string = "#QuitMessage30"; break;
-	case 31: string = "#QuitMessage31"; break;
-	case 32: string = "#QuitMessage32"; break;
-	}
-
-	return string;
-}
-
-//=============================================================================
-static void LeaveGameOkCallback()
-{
-	COM_TimestampedLog( "Exit Game" );
-
-	MainMenu* self = 
-		static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) );
-
-	if ( self )
-	{
-		self->Close();
-	}
-
-	engine->ExecuteClientCmd( "gameui_hide" );
-
-	// On PC people can be playing via console bypassing matchmaking
-	// and required session settings, so to leave game duplicate
-	// session closure with an extra "disconnect" command.
-	engine->ExecuteClientCmd( "disconnect" );
-
-	//Turn off commentary.
-	engine->ExecuteClientCmd( "commentary 0" );
-
-	engine->ExecuteClientCmd( "gameui_activate" );
-
-	CBaseModPanel::GetSingleton().CloseAllWindows();
-	CBaseModPanel::GetSingleton().OpenFrontScreen();
-}
-
-static void LoadGameCallback()
-{
-	MainMenu* self = 
-		static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) );
-
-	if ( self )
-	{
-		self->Close();
-	}
-
-	engine->ExecuteClientCmd( "reload" );
-	engine->ExecuteClientCmd( "gameui_hide" );
-
-	CBaseModPanel::GetSingleton().CloseAllWindows();
-	CBaseModPanel::GetSingleton().OnGameUIHidden();
-}
-
-static void SavedGameCallback()
-{
-	MainMenu* self = 
-		static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) );
-
-	if ( self )
-	{
-		self->Close();
-	}
-
-	engine->ClientCmd( "autosave\n" );
-	engine->ExecuteClientCmd( "gameui_hide" );
-
-	CBaseModPanel::GetSingleton().CloseAllWindows();
-	CBaseModPanel::GetSingleton().OnGameUIHidden();
 }
 
 //=============================================================================
 void MainMenu::OnCommand( const char *command )
 {
-	if (!steamapicontext)
-	{
-		GenericConfirmation* confirmation =
-			static_cast<GenericConfirmation*>(CBaseModPanel::GetSingleton().OpenWindow(WT_GENERICCONFIRMATION, this, false));
-
-		GenericConfirmation::Data_t data;
-
-		data.pWindowTitle = "Steamworks Error";
-		//data.pMessageText = "#HL2CEUI_BuyHL2AndInstallSDK";
-
-		data.bOkButtonEnabled = true;
-		data.pfnOkCallback = &AcceptQuitGameCallback;
-		data.bCancelButtonEnabled = false;
-
-		confirmation->SetUsageData(data);
-
-		NavigateFrom();
-	}
-
-
 	int iUserSlot = CBaseModPanel::GetSingleton().GetLastActiveUserId();
 
 	if ( UI_IsDebug() )
 	{
 		Msg("[GAMEUI] Handling main menu command %s from user%d ctrlr%d\n",
-			command, iUserSlot, 0 );
+			command, iUserSlot, XBX_GetUserId( iUserSlot ) );
 	}
 
 	bool bOpeningFlyout = false;
 
-	if (!Q_strcmp(command, "SoloPlay"))
+	if ( char const *szQuickMatch = StringAfterPrefix( command, "QuickMatch_" ) )
 	{
+		if ( CheckAndDisplayErrorIfNotLoggedIn() ||
+			CUIGameData::Get()->CheckAndDisplayErrorIfNotSignedInToLive( this ) )
+			return;
 
-		CBaseModPanel::GetSingleton().OnOpenNewGameDialog();
-		/*if(CheckSaveFile())
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" system { "
+				" network LIVE "
+			" } "
+			" game { "
+				" mode = "
+			" } "
+			" options { "
+				" action quickmatch "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		pSettings->SetString( "game/mode", szQuickMatch );
+
+		// TCR: We need to respect the default difficulty
+		if ( GameModeHasDifficulty( szQuickMatch ) )
+			pSettings->SetString( "game/difficulty", GameModeGetDefaultDifficulty( szQuickMatch ) );
+
+		g_pMatchFramework->MatchSession( pSettings );
+	}
+	else if ( char const *szCustomMatch = StringAfterPrefix( command, "CustomMatch_" ) )
+	{
+		if ( CheckAndDisplayErrorIfNotLoggedIn() ||
+			 CUIGameData::Get()->CheckAndDisplayErrorIfNotSignedInToLive( this ) )
+			return;
+
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" system { "
+				" network LIVE "
+			" } "
+			" game { "
+				" mode = "
+			" } "
+			" options { "
+				" action custommatch "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		pSettings->SetString( "game/mode", szCustomMatch );
+
+		CBaseModPanel::GetSingleton().OpenWindow(
+			ui_play_online_browser.GetBool() ? WT_FOUNDPUBLICGAMES : WT_GAMESETTINGS,
+			this, true, pSettings );
+	}
+	else if ( char const *szFriendsMatch = StringAfterPrefix( command, "FriendsMatch_" ) )
+	{
+		if ( CheckAndDisplayErrorIfNotLoggedIn() )
+			return;
+
+		if ( StringHasPrefix( szFriendsMatch, "team" ) &&
+			CUIGameData::Get()->CheckAndDisplayErrorIfNotSignedInToLive( this ) )
+			// Team games require to be signed in to LIVE
+			return;
+
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" game { "
+				" mode = "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		pSettings->SetString( "game/mode", szFriendsMatch );
+
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow( WT_ALLGAMESEARCHRESULTS, this, true, pSettings );
+	}	
+	else if ( char const *szGroupServer = StringAfterPrefix( command, "GroupServer_" ) )
+	{
+		if ( CheckAndDisplayErrorIfNotLoggedIn() )
+			return;
+
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" game { "
+				// " mode = "
+			" } "
+			" options { "
+				" action groupserver "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		if ( *szGroupServer )
+			pSettings->SetString( "game/mode", szGroupServer );
+
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow( WT_STEAMGROUPSERVERS, this, true, pSettings );
+	}
+	else if ( char const *szLeaderboards = StringAfterPrefix( command, "Leaderboards_" ) )
+	{
+		if ( CheckAndDisplayErrorIfNotLoggedIn() ||
+			CUIGameData::Get()->CheckAndDisplayErrorIfOffline( this,
+			"#GameUI_MainMenu_SurvivalLeaderboards_Tip_Disabled" ) )
+			return;
+
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" game { "
+				" mode = "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		pSettings->SetString( "game/mode", szLeaderboards );
+
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow( WT_LEADERBOARD, this, true, pSettings );
+	}
+	else if( !Q_strcmp( command, "VersusSoftLock" ) )
+	{
+		OnCommand( "FlmVersusFlyout" );
+		return;
+	}
+	else if ( !Q_strcmp( command, "SurvivalCheck" ) )
+	{
+		OnCommand( "FlmSurvivalFlyout" );
+		return;
+	}
+	else if ( !Q_strcmp( command, "ScavengeCheck" ) )
+	{
+		OnCommand( "FlmScavengeFlyout" );
+		return;
+	}
+	else if ( !Q_strcmp( command, "SoloPlay" ) )
+	{
+		if ( !asw_show_all_singleplayer_maps.GetBool() )
+		{
+			KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" system { "
+			" network offline "
+			" } "
+			" game { "
+			" mode single_mission "
+			" campaign jacob "
+			" mission asi-jac1-landingbay_pract "
+			" } "
+			);
+			KeyValues::AutoDelete autodelete( pSettings );
+
+			pSettings->SetString( "Game/difficulty", GameModeGetDefaultDifficulty( pSettings->GetString( "Game/mode" ) ) );
+
+			g_pMatchFramework->CreateSession( pSettings );
+
+			// Automatically start the credits session, no configuration required
+			if ( IMatchSession *pMatchSession = g_pMatchFramework->GetMatchSession() )
+			{
+				pMatchSession->Command( KeyValues::AutoDeleteInline( new KeyValues( "Start" ) ) );
+			}
+		}
+		else
+		{
+			KeyValues *pSettings = KeyValues::FromString(
+				"Settings",
+				" System { "
+				" network offline "
+				" } "
+				" Game { "
+				" mode campaign "
+				" campaign jacob "
+				" mission asi-jac1-landingbay_01 "
+				" } "
+				);
+			KeyValues::AutoDelete autodelete( pSettings );
+
+			// TCR: We need to respect the default difficulty
+			pSettings->SetString( "Game/difficulty", GameModeGetDefaultDifficulty( pSettings->GetString( "Game/mode" ) ) );
+
+			g_pMatchFramework->CreateSession( pSettings );
+		}
+	}
+	else if ( !Q_strcmp( command, "DeveloperCommentary" ) )
+	{
+#ifdef _X360
+		if ( XBX_GetNumGameUsers() > 1 )
 		{
 			GenericConfirmation* confirmation = 
 				static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, false ) );
 
 			GenericConfirmation::Data_t data;
 
-			data.pWindowTitle = "#Template_NewGame_Confirm";
-			data.pMessageText = "#Template_NewGame_ConfirmMsg";
+			data.pWindowTitle = "#GameUI_MainMenu_SplitscreenDisableConf";
+			data.pMessageText = "#GameUI_Extras_Commentary_ss_Msg";
 
 			data.bOkButtonEnabled = true;
-			data.pfnOkCallback = &AcceptNewGameCallback;
+			data.pfnOkCallback = &AcceptSplitscreenDisableCallback;
 			data.bCancelButtonEnabled = true;
 
 			confirmation->SetUsageData(data);
-
-			NavigateFrom();
-
-			engine->ExecuteClientCmd("sv_cheats 0");
-			engine->ExecuteClientCmd("commentary 0");
+			return;
 		}
-		else
-		{
-			if ( MainMenu *pMainMenu = static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) ) )
-			{
-				engine->ExecuteClientCmd( "sv_cheats 0" );
-				engine->ExecuteClientCmd( "commentary 0" );
-				OnCommand( "SoloPlay_NoConfirm" );
-			}
-
-		}*/
-	}
-	/*else if (!Q_strcmp(command, "SoloPlay_NoConfirm"))
-	{
-			engine->ClientCmd( "exec chapter1.cfg" );
-	}*/
-
-	/*
-	else if ( !Q_strcmp( command, "StatsAndAchievements" ) )
-	{
-	}
-	
-	*/
-
-	else if ( ( !Q_strcmp( command, "ReturnToGame" ) ) && engine->IsConnected() )
-	{
-		engine->ClientCmd("gameui_hide");
-	}
-	else if (!Q_strcmp(command, "Options_Old"))
-	{
-		CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
-	}
-	// some hacky reload by just re-opening the menu
-	else if (!Q_strcmp(command, "menu_reload"))
-	{
-		CBaseModPanel::GetSingleton().OpenWindow(WT_MAINMENU, this, true );
-	}
-
-	// --
-	// OPTIONS
-	else if (!Q_strcmp(command, "Audio"))
-	{
-		if ( ui_old_options_menu.GetBool() )
-		{
-			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
-		}
-		else
-		{
-			// audio options dialog, PC only
-			if ( m_ActiveControl )
-			{
-				m_ActiveControl->NavigateFrom( );
-			}
-			CBaseModPanel::GetSingleton().OpenWindow(WT_AUDIO, this, false );
-		}
-	}
-	else if (!Q_strcmp(command, "Video"))
-	{
-		if ( ui_old_options_menu.GetBool() )
-		{
-			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
-		}
-		else
-		{
-			// video options dialog, PC only
-			if ( m_ActiveControl )
-			{
-				m_ActiveControl->NavigateFrom( );
-			}
-			CBaseModPanel::GetSingleton().OpenWindow(WT_VIDEO, this, false );
-		}
-	}
-	else if (!Q_strcmp(command, "Brightness"))
-	{
-		if ( ui_old_options_menu.GetBool() )
-		{
-			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
-		}
-		else
-		{
-			// brightness options dialog, PC only
-			//OpenGammaDialog( GetVParent() );
-			Msg("Sorry, use the old Options Dialog.\n");
-		}
-	}
-	else if (!Q_strcmp(command, "KeyboardMouse"))
-	{
-		if ( ui_old_options_menu.GetBool() )
-		{
-			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
-		}
-		else
-		{
-			// standalone keyboard/mouse dialog, PC only
-			if ( m_ActiveControl )
-			{
-				m_ActiveControl->NavigateFrom( );
-			}
-			CBaseModPanel::GetSingleton().OpenWindow(WT_KEYBOARDMOUSE, this, false );
-		}
-	}
-	else if (!Q_strcmp(command, "Mouse"))
-	{
-		CBaseModPanel::GetSingleton().OpenOptionsMouseDialog( this );
-	}
-	else if( Q_stricmp( "#L4D360UI_Controller_Edit_Keys_Buttons", command ) == 0 )
-	{
-		FlyoutMenu::CloseActiveMenu();
-		CBaseModPanel::GetSingleton().OpenKeyBindingsDialog( this );
-	}
-	
-	//else if (!Q_strcmp(command, "SaveGame"))
-	else if ( ( !Q_strcmp( command, "SaveGame" ) ) && engine->IsConnected() )
-	{
-
-		CBaseModPanel::GetSingleton().OnOpenSaveGameDialog();
-		/*GenericConfirmation* confirmation = 
-			static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, true ) );
-
-		GenericConfirmation::Data_t data;
-
-		data.pWindowTitle = "#GameUI_ConfirmOverwriteSaveGame_Title";
-		data.pMessageText = "#GameUI_ConfirmOverwriteSaveGame_Info";
-		data.bOkButtonEnabled = true;
-		data.pfnOkCallback = &SavedGameCallback;
-		data.bCancelButtonEnabled = true;
-
-		confirmation->SetUsageData(data);*/
-	}
-	else if (!Q_strcmp(command, "LoadLastSave"))
-	{
-		CBaseModPanel::GetSingleton().OnOpenLoadGameDialog();
-		/*if ( IsPC() )
-		{
-			GenericConfirmation* confirmation = 
-				static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, false ) );
-
-			GenericConfirmation::Data_t data;
-
-			data.pWindowTitle = "#Template_LoadLastSave_Confirm";
-			data.pMessageText = "#Template_LoadLastSave_ConfirmMsg";
-
-			data.bOkButtonEnabled = true;
-			data.pfnOkCallback = &AcceptLoadCallback;
-			data.bCancelButtonEnabled = true;
-
-			confirmation->SetUsageData(data);
-
-			NavigateFrom();
-		}*/
-	}
-	
-	/*else if ( !Q_stricmp( command, "LoadLastSave_NoConfirm" ) )
-	{
-		if ( IsPC() )
-		{
-			engine->ClientCmd( "load autosave\n" );
-		}
-	}*/
-	else if (!Q_strcmp(command, "Credits"))
-	{
-		
-	}
-
-	else if ( ( !Q_strcmp( command, "ExitToMainMenu" ) ) && engine->IsConnected() )
-	{
+#endif
+		// Explain the rules of commentary
 		GenericConfirmation* confirmation = 
-			static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, true ) );
+			static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, false ) );
 
 		GenericConfirmation::Data_t data;
 
-		data.pWindowTitle = "#L4D360UI_LeaveMultiplayerConf";
-		data.pMessageText = "#L4D360UI_LeaveMultiplayerConfMsg";
+		data.pWindowTitle = "#GAMEUI_CommentaryDialogTitle";
+		data.pMessageText = "#GameUI_Commentary_Explanation";
+
 		data.bOkButtonEnabled = true;
-		data.pfnOkCallback = &LeaveGameOkCallback;
+		data.pfnOkCallback = &AcceptCommentaryRulesCallback;
 		data.bCancelButtonEnabled = true;
 
 		confirmation->SetUsageData(data);
+		NavigateFrom();
 	}
+	else if ( !Q_strcmp( command, "StatsAndAchievements" ) )
+	{
+		// If PC make sure that the Steam user is logged in
+		if ( CheckAndDisplayErrorIfNotLoggedIn() )
+			return;
 
+#ifdef _X360
+		// If 360 make sure that the user is not a guest
+		if ( XBX_GetUserIsGuest( CBaseModPanel::GetSingleton().GetLastActiveUserId() ) )
+		{
+			GenericConfirmation* confirmation = 
+				static_cast<GenericConfirmation*>( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, false ) );
+			GenericConfirmation::Data_t data;
+			data.pWindowTitle = "#GameUI_MsgBx_AchievementsDisabled";
+			data.pMessageText = "#GameUI_MsgBx_GuestsUnavailableToGuests";
+			data.bOkButtonEnabled = true;
+			confirmation->SetUsageData(data);
+
+			return;
+		}
+#endif //_X360
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+
+		CBaseModPanel::GetSingleton().OpenWindow( WT_ACHIEVEMENTS, this, true );
+	}
+	else if ( !Q_strcmp( command, "FlmExtrasFlyoutCheck" ) )
+	{
+		if ( IsX360() && CUIGameData::Get()->SignedInToLive() )
+			OnCommand( "FlmExtrasFlyout_Live" );
+		else
+			OnCommand( "FlmExtrasFlyout_Simple" );
+		return;
+	}
+	else if ( char const *szInviteType = StringAfterPrefix( command, "InviteUI_" ) )
+	{
+		if ( IsX360() )
+		{
+			CUIGameData::Get()->OpenInviteUI( szInviteType );
+		}
+		else
+		{
+			CUIGameData::Get()->ExecuteOverlayCommand( "LobbyInvite" );
+		}
+	}
+	else if (!Q_strcmp(command, "Game"))
+	{
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow(WT_GAMEOPTIONS, this, true );
+	}
+	else if (!Q_strcmp(command, "AudioVideo"))
+	{
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow(WT_AUDIOVIDEO, this, true );
+	}
+	else if (!Q_strcmp(command, "Controller"))
+	{
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow(WT_CONTROLLER, this, true );
+	}
+	else if (!Q_strcmp(command, "Storage"))
+	{
+#ifdef _X360
+		if ( XBX_GetUserIsGuest( iUserSlot ) )
+		{
+			CBaseModPanel::GetSingleton().PlayUISound( UISOUND_INVALID );
+			return;
+		}
+#endif
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+
+		// Trigger storage device selector
+		CUIGameData::Get()->SelectStorageDevice( new CChangeStorageDevice( XBX_GetUserId( iUserSlot ) ) );
+	}
+	else if (!Q_strcmp(command, "Credits"))
+	{
+#ifdef _X360
+		if ( XBX_GetNumGameUsers() > 1 )
+		{
+			GenericConfirmation* confirmation = 
+				static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, false ) );
+
+			GenericConfirmation::Data_t data;
+
+			data.pWindowTitle = "#GameUI_MainMenu_SplitscreenDisableConf";
+			data.pMessageText = "#GameUI_Extras_Credits_ss_Msg";
+
+			data.bOkButtonEnabled = true;
+			data.pfnOkCallback = &AcceptSplitscreenDisableCallback;
+			data.bCancelButtonEnabled = true;
+
+			confirmation->SetUsageData(data);
+			return;
+		}
+#endif
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" system { "
+				" network offline "
+			" } "
+			" game { "
+				" mode single_mission "
+			" } "
+			" options { "
+				" play credits "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		g_pMatchFramework->CreateSession( pSettings );
+
+		// Automatically start the credits session, no configuration required
+		if ( IMatchSession *pMatchSession = g_pMatchFramework->GetMatchSession() )
+		{
+			pMatchSession->Command( KeyValues::AutoDeleteInline( new KeyValues( "Start" ) ) );
+		}
+	}
 	else if (!Q_strcmp(command, "QuitGame"))
 	{
 		if ( IsPC() )
@@ -465,8 +467,8 @@ void MainMenu::OnCommand( const char *command )
 
 			GenericConfirmation::Data_t data;
 
-			data.pWindowTitle = "#L4D360UI_MainMenu_Quit_ConfirmMsg";
-			data.pMessageText = GetRandomQuitString();
+			data.pWindowTitle = "#GameUI_MainMenu_Quit_Confirm";
+			data.pMessageText = "#GameUI_MainMenu_Quit_ConfirmMsg";
 
 			data.bOkButtonEnabled = true;
 			data.pfnOkCallback = &AcceptQuitGameCallback;
@@ -482,54 +484,6 @@ void MainMenu::OnCommand( const char *command )
 			engine->ExecuteClientCmd( "demo_exit" );
 		}
 	}
-	else if (!Q_strcmp(command, "SteamworksError"))
-	{
-
-		GenericConfirmation* confirmation =
-			static_cast<GenericConfirmation*>(CBaseModPanel::GetSingleton().OpenWindow(WT_GENERICCONFIRMATION, this, false));
-
-		GenericConfirmation::Data_t data;
-
-		data.pWindowTitle = "Steamworks Error";
-		//data.pMessageText = "#HL2CEUI_BuyHL2AndInstallSDK";
-
-		data.bOkButtonEnabled = true;
-		data.pfnOkCallback = &AcceptQuitGameCallback;
-		data.bCancelButtonEnabled = false;
-
-		confirmation->SetUsageData(data);
-
-		NavigateFrom();
-
-	}
-
-	else if ( !Q_strcmp( command, "DeveloperCommentary" ) )
-	{
-		// Explain the rules of commentary
-		GenericConfirmation* confirmation = 
-			static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, false ) );
-
-		GenericConfirmation::Data_t data;
-
-		data.pWindowTitle = "#GAMEUI_CommentaryDialogTitle";
-		data.pMessageText = "#L4D360UI_Commentary_Explanation";
-
-		data.bOkButtonEnabled = true;
-		data.pfnOkCallback = &AcceptCommentaryRulesCallback;
-		data.bCancelButtonEnabled = true;
-
-		confirmation->SetUsageData(data);
-		NavigateFrom();
-	}
-	else if( !Q_strcmp( command, "Addons" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_ADDONS, this, false );
-	}
-	// what is this
-	else if( !Q_strcmp( command, "MyUGC" ) )
-	{
-		CBaseModPanel::GetSingleton().OpenWindow( WT_MYUGC, this, true );
-	}
 	else if ( !Q_stricmp( command, "QuitGame_NoConfirm" ) )
 	{
 		if ( IsPC() )
@@ -537,15 +491,259 @@ void MainMenu::OnCommand( const char *command )
 			engine->ClientCmd( "quit" );
 		}
 	}
-	else if ( !Q_strcmp( command, "FlmExtrasFlyoutCheck" ) )
+	else if ( !Q_strcmp( command, "EnableSplitscreen" ) )
 	{
-		OnCommand( "FlmExtrasFlyout_Simple" );
-		return;
+		Msg( "Enabling splitscreen from main menu...\n" );
+
+		CBaseModPanel::GetSingleton().CloseAllWindows();
+		CAttractScreen::SetAttractMode( CAttractScreen::ATTRACT_GOSPLITSCREEN );
+		CBaseModPanel::GetSingleton().OpenWindow( WT_ATTRACTSCREEN, NULL, true );
 	}
-	else 
+	else if ( !Q_strcmp( command, "DisableSplitscreen" ) )
+	{
+		GenericConfirmation* confirmation = 
+			static_cast< GenericConfirmation* >( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, this, false ) );
+
+		GenericConfirmation::Data_t data;
+
+		data.pWindowTitle = "#GameUI_MainMenu_SplitscreenDisableConf";
+		data.pMessageText = "#GameUI_MainMenu_SplitscreenDisableConfMsg";
+
+		data.bOkButtonEnabled = true;
+		data.pfnOkCallback = &AcceptSplitscreenDisableCallback;
+		data.bCancelButtonEnabled = true;
+
+		confirmation->SetUsageData(data);
+	}
+	else if ( !Q_strcmp( command, "DisableSplitscreen_NoConfirm" ) )
+	{
+		Msg( "Disabling splitscreen from main menu...\n" );
+
+		CAttractScreen::SetAttractMode( CAttractScreen::ATTRACT_GAMESTART  );
+		OnCommand( "ActivateAttractScreen" );
+	}
+	else if (!Q_strcmp(command, "ChangeGamers"))	// guest SIGN-IN command
+	{
+		CAttractScreen::SetAttractMode( CAttractScreen::ATTRACT_GUESTSIGNIN, XBX_GetUserId( iUserSlot ) );
+		OnCommand( "ActivateAttractScreen" );
+	}
+	else if (!Q_strcmp(command, "ActivateAttractScreen"))
+	{
+		if ( IsX360() )
+		{
+			Close();
+			CBaseModPanel::GetSingleton().CloseAllWindows();
+			CAttractScreen::SetAttractMode( CAttractScreen::ATTRACT_GAMESTART );
+			CBaseModFrame *pWnd = CBaseModPanel::GetSingleton().OpenWindow( WT_ATTRACTSCREEN, NULL, true );
+			if ( pWnd )
+			{
+				pWnd->PostMessage( pWnd, new KeyValues( "ChangeGamers" ) );
+			}
+		}		
+	}
+	else if (!Q_strcmp(command, "Audio"))
+	{
+		if ( ui_old_options_menu.GetBool() )
+		{
+			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
+		}
+		else
+		{
+			// audio options dialog, PC only
+			if ( m_ActiveControl )
+			{
+				m_ActiveControl->NavigateFrom( );
+			}
+			CBaseModPanel::GetSingleton().OpenWindow(WT_AUDIO, this, true );
+		}
+	}
+	else if (!Q_strcmp(command, "Video"))
+	{
+		if ( ui_old_options_menu.GetBool() )
+		{
+			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
+		}
+		else
+		{
+			// video options dialog, PC only
+			if ( m_ActiveControl )
+			{
+				m_ActiveControl->NavigateFrom( );
+			}
+			CBaseModPanel::GetSingleton().OpenWindow(WT_VIDEO, this, true );
+		}
+	}
+	else if (!Q_strcmp(command, "Brightness"))
+	{
+		if ( ui_old_options_menu.GetBool() )
+		{
+			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
+		}
+		else
+		{
+			// brightness options dialog, PC only
+			OpenGammaDialog( GetVParent() );
+		}
+	}
+	else if (!Q_strcmp(command, "KeyboardMouse"))
+	{
+		if ( ui_old_options_menu.GetBool() )
+		{
+			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
+		}
+		else
+		{
+			// standalone keyboard/mouse dialog, PC only
+			if ( m_ActiveControl )
+			{
+				m_ActiveControl->NavigateFrom( );
+			}
+			CBaseModPanel::GetSingleton().OpenWindow(WT_KEYBOARDMOUSE, this, true );
+		}
+	}
+	else if( Q_stricmp( "#GameUI_Controller_Edit_Keys_Buttons", command ) == 0 )
+	{
+		FlyoutMenu::CloseActiveMenu();
+		CBaseModPanel::GetSingleton().OpenKeyBindingsDialog( this );
+	}
+	else if (!Q_strcmp(command, "MultiplayerSettings"))
+	{
+		if ( ui_old_options_menu.GetBool() )
+		{
+			CBaseModPanel::GetSingleton().OpenOptionsDialog( this );
+		}
+		else
+		{
+			// standalone multiplayer settings dialog, PC only
+			if ( m_ActiveControl )
+			{
+				m_ActiveControl->NavigateFrom( );
+			}
+			CBaseModPanel::GetSingleton().OpenWindow(WT_MULTIPLAYER, this, true );
+		}
+	}
+	else if (!Q_strcmp(command, "CloudSettings"))
+	{
+		// standalone cloud settings dialog, PC only
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow(WT_CLOUD, this, true );
+	}
+	else if (!Q_strcmp(command, "SeeAll"))
+	{
+		if ( CheckAndDisplayErrorIfNotLoggedIn() )
+			return;
+
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" game { "
+			// passing empty game settings to indicate no preference
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		if ( m_ActiveControl )
+		{
+			m_ActiveControl->NavigateFrom( );
+		}
+		CBaseModPanel::GetSingleton().OpenWindow( WT_ALLGAMESEARCHRESULTS, this, true, pSettings );
+		CBaseModPanel::GetSingleton().PlayUISound( UISOUND_ACCEPT );
+	}
+	else if ( !Q_strcmp( command, "OpenServerBrowser" ) )
+	{
+		if ( CheckAndDisplayErrorIfNotLoggedIn() )
+			return;
+
+		// on PC, bring up the server browser and switch it to the LAN tab (tab #5)
+		engine->ClientCmd( "openserverbrowser" );
+	}
+	else if ( !Q_strcmp( command, "DemoConnect" ) )
+	{
+		g_pMatchFramework->GetMatchTitle()->PrepareClientForConnect( NULL );
+		engine->ClientCmd( CFmtStr( "connect %s", demo_connect_string.GetString() ) );
+	}
+	else if (command && command[0] == '#')
+	{
+		// Pass it straight to the engine as a command
+		engine->ClientCmd( command+1 );
+	}
+	else if( !Q_strcmp( command, "Addons" ) )
+	{
+		CBaseModPanel::GetSingleton().OpenWindow( WT_ADDONS, this, true );
+	}
+	else if( !Q_strcmp( command, "CreateGame" ) )
+	{
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" system { "
+			" network LIVE "
+			" access public "
+			" } "
+			" game { "
+			" mode = "
+			" campaign = "
+			" mission = "
+			" } "
+			" options { "
+			" action create "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		char const *szGameMode = "campaign";
+		pSettings->SetString( "game/mode", szGameMode );
+		pSettings->SetString( "game/campaign", "jacob" );
+		pSettings->SetString( "game/mission", "asi-jac1-landingbay_01" );
+
+		if ( !CUIGameData::Get()->SignedInToLive() )
+		{
+			pSettings->SetString( "system/network", "lan" );
+			pSettings->SetString( "system/access", "public" );
+		}
+
+		if ( StringHasPrefix( szGameMode, "team" ) )
+		{
+			pSettings->SetString( "system/netflag", "teamlobby" );
+		}
+// 		else if ( !Q_stricmp( "custommatch", m_pDataSettings->GetString( "options/action", "" ) ) )
+// 		{
+// 			pSettings->SetString( "system/access", "public" );
+// 		}
+
+		// TCR: We need to respect the default difficulty
+		pSettings->SetString( "game/difficulty", GameModeGetDefaultDifficulty( szGameMode ) );
+
+		CBaseModPanel::GetSingleton().PlayUISound( UISOUND_ACCEPT );
+		CBaseModPanel::GetSingleton().CloseAllWindows();
+		CBaseModPanel::GetSingleton().OpenWindow( WT_GAMESETTINGS, NULL, true, pSettings );
+	}
+	else
 	{
 		const char *pchCommand = command;
-		if ( StringHasPrefix( command, "FlmExtrasFlyout_" ) )
+		if ( !Q_strcmp(command, "FlmOptionsFlyout") )
+		{
+#ifdef _X360
+			if ( XBX_GetPrimaryUserIsGuest() )
+			{
+				pchCommand = "FlmOptionsGuestFlyout";
+			}
+#endif
+		}
+		else if ( !Q_strcmp(command, "FlmVersusFlyout") )
+		{
+			command = "VersusSoftLock";
+		}
+		else if ( !Q_strcmp( command, "FlmSurvivalFlyout" ) )
+		{
+			command = "SurvivalCheck";
+		}
+		else if ( !Q_strcmp( command, "FlmScavengeFlyout" ) )
+		{
+			command = "ScavengeCheck";
+		}
+		else if ( StringHasPrefix( command, "FlmExtrasFlyout_" ) )
 		{
 			command = "FlmExtrasFlyoutCheck";
 		}
@@ -608,6 +806,9 @@ void MainMenu::OnCommand( const char *command )
 //=============================================================================
 void MainMenu::OpenMainMenuJoinFailed( const char *msg )
 {
+	// This is called when accepting an invite or joining friends game fails
+	CUIGameData::Get()->OpenWaitScreen( msg );
+	CUIGameData::Get()->CloseWaitScreen( NULL, NULL );
 }
 
 //=============================================================================
@@ -635,6 +836,17 @@ void MainMenu::OnKeyCodePressed( KeyCode code )
 	case KEY_XBUTTON_B:
 		// Capture the B key so it doesn't play the cancel sound effect
 		break;
+	case KEY_XBUTTON_X:
+		{
+			QuickJoinPanel *pQuickJoin = dynamic_cast<QuickJoinPanel*>( FindChildByName( "PnlQuickJoin" ) );
+			if ( pQuickJoin && pQuickJoin->ShouldBeVisible() )
+			{
+				// X shortcut only works if the panel is showing
+				OnCommand( "SeeAll" );
+			}
+
+			break;
+		}
 
 	case KEY_XBUTTON_BACK:
 #ifdef _X360
@@ -644,7 +856,7 @@ void MainMenu::OnKeyCodePressed( KeyCode code )
 		}
 #endif
 		break;
-	/*
+
 	case KEY_XBUTTON_INACTIVE_START:
 #ifdef _X360
 		if ( !XBX_GetPrimaryUserIsGuest() &&
@@ -659,7 +871,6 @@ void MainMenu::OnKeyCodePressed( KeyCode code )
 		}
 #endif
 		break;
-	*/
 
 	default:
 		BaseClass::OnKeyCodePressed( code );
@@ -668,30 +879,36 @@ void MainMenu::OnKeyCodePressed( KeyCode code )
 }
 
 //=============================================================================
-bool MainMenu::CheckSaveFile()
-{
-	char modPath[MAX_PATH];
-	char Filename[MAX_PATH];
-
-	GetPrimaryModDirectoryForMenu( modPath, MAX_PATH );
-	V_snprintf( Filename, sizeof( Filename ), "%s%s%c%s", modPath, SAVE_DIRNAME, CORRECT_PATH_SEPARATOR, SAVE_FILENAME );
-	
-	FileFindHandle_t findHandleVMT;
-	bool bHaveFile = ( NULL != g_pFullFileSystem->FindFirst( Filename, &findHandleVMT ) );
-	g_pFullFileSystem->FindClose( findHandleVMT );
-
-	if ( bHaveFile )
-	{
-		return true;
-	}
-
-	return false;
-	
-}
-//=============================================================================
 void MainMenu::OnThink()
 {
-	BaseClass::OnThink();
+	// need to change state of flyout if user suddenly disconnects
+	// while flyout is open
+	BaseModUI::FlyoutMenu *flyout = dynamic_cast< FlyoutMenu* >( FindChildByName( "FlmCampaignFlyout" ) );
+	if ( flyout )
+	{
+		BaseModHybridButton *pButton = dynamic_cast< BaseModHybridButton* >( flyout->FindChildButtonByCommand( "QuickMatchCoOp" ) );
+		if ( pButton )
+		{
+			if ( !CUIGameData::Get()->SignedInToLive() )
+			{
+				pButton->SetText( "#GameUI_QuickStart" );
+				if ( m_iQuickJoinHelpText != MMQJHT_QUICKSTART )
+				{
+					pButton->SetHelpText( "#GameUI_QuickMatch_Offline_Tip" );
+					m_iQuickJoinHelpText = MMQJHT_QUICKSTART;
+				}
+			}
+			else
+			{
+				pButton->SetText( "#GameUI_QuickMatch" );
+				if ( m_iQuickJoinHelpText != MMQJHT_QUICKMATCH )
+				{
+					pButton->SetHelpText( "#GameUI_QuickMatch_Tip" );
+					m_iQuickJoinHelpText = MMQJHT_QUICKMATCH;
+				}
+			}
+		}
+	}
 
 	if ( IsPC() )
 	{
@@ -701,35 +918,33 @@ void MainMenu::OnThink()
 			const MaterialSystem_Config_t &config = materials->GetCurrentConfigForVideoCard();
 			pFlyout->SetControlEnabled( "BtnBrightness", !config.Windowed() );
 		}
-
-		bool bContinueableGame = CheckSaveFile(); //first_time_play.GetBool();
-
-		SetControlEnabled( "BtnContinueGame", bContinueableGame );
-
-		// --------------------------------------
-		// only show these buttons when in game
-		SetControlVisible("BtnReturnToGame", engine->IsConnected());
-		SetControlVisible("BtnSaveGame", engine->IsConnected());
-		SetControlVisible("BtnDisconnect", engine->IsConnected());
-
-		// only show this button in the menu
-		SetControlVisible("BtnQuit", !engine->IsConnected());
-		// --------------------------------------
 	}
+
+	BaseClass::OnThink();
 }
 
 //=============================================================================
 void MainMenu::OnOpen()
 {
-	LoadControlSettings( "Resource/UI/BaseModUI/MainMenu.res" );
-
 	if ( IsPC() && connect_lobby.GetString()[0] )
 	{
 		// if we were launched with "+connect_lobby <lobbyid>" on the command line, join that lobby immediately
 		uint64 nLobbyID = _atoi64( connect_lobby.GetString() );
 		if ( nLobbyID != 0 )
 		{
-			
+			KeyValues *pSettings = KeyValues::FromString(
+				"settings",
+				" system { "
+					" network LIVE "
+				" } "
+				" options { "
+					" action joinsession "
+				" } "
+				);
+			pSettings->SetUint64( "options/sessionid", nLobbyID );
+			KeyValues::AutoDelete autodelete( pSettings );
+
+			g_pMatchFramework->MatchSession( pSettings );
 		}
 		// clear the convar so we don't try to join that lobby every time we return to the main menu
 		connect_lobby.SetValue( "" );
@@ -738,7 +953,7 @@ void MainMenu::OnOpen()
 	BaseClass::OnOpen();
 
 	SetFooterState();
-	/*
+
 #ifndef _X360
 	bool bSteamCloudVisible = false;
 
@@ -751,7 +966,6 @@ void MainMenu::OnOpen()
 		}
 	}
 
-
 	if ( !bSteamCloudVisible )
 	{
 		if ( AddonAssociation::CheckAndSeeIfShouldShow() )
@@ -759,9 +973,7 @@ void MainMenu::OnOpen()
 			CBaseModPanel::GetSingleton().OpenWindow( WT_ADDONASSOCIATION, this, false );
 		}
 	}
-
 #endif
-	*/
 }
 
 //=============================================================================
@@ -798,8 +1010,8 @@ void MainMenu::SetFooterState()
 #endif
 
 		footer->SetButtons( buttons, FF_MAINMENU, false );
-		footer->SetButtonText( FB_ABUTTON, "#L4D360UI_Select" );
-		footer->SetButtonText( FB_XBUTTON, "#L4D360UI_MainMenu_SeeAll" );
+		footer->SetButtonText( FB_ABUTTON, "#GameUI_Select" );
+		footer->SetButtonText( FB_XBUTTON, "#GameUI_MainMenu_SeeAll" );
 	}
 }
 
@@ -808,33 +1020,93 @@ void MainMenu::ApplySchemeSettings( IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings( pScheme );
 
-	//LoadControlSettings( "Resource/UI/BaseModUI/MainMenu.res" );
-
-	//SetPaintBackgroundEnabled( true );
-
-	//SetFooterState();
-
 	const char *pSettings = "Resource/UI/BaseModUI/MainMenu.res";
 
-	if (!steamapicontext)
-		pSettings = "Resource/UI/BaseModUI/mainmenu_steamworkserror.res";
-
 #if !defined( _X360 )
-	/*
+	if ( !g_pMatchFramework->GetMatchSystem() )
+	{
+		Msg( "BAD!\n" );
+	}
+	if ( !g_pMatchFramework->GetMatchSystem()->GetPlayerManager() )
+	{
+		Msg( "BAD PLAYER MANAGER!\n" );
+	}
 	if ( !g_pMatchFramework->GetMatchSystem()->GetPlayerManager()->GetLocalPlayer( 0 ) )
 	{
 		pSettings = "Resource/UI/BaseModUI/MainMenuStub.res";
 	}
-	*/
 #endif
-	
+
 	LoadControlSettings( pSettings );
 
 	BaseModHybridButton *button = dynamic_cast< BaseModHybridButton* >( FindChildByName( "BtnPlaySolo" ) );
 	if ( button )
 	{
+#ifdef _X360
+		button->SetText( ( XBX_GetNumGameUsers() > 1 ) ? ( "#GameUI_MainMenu_PlaySplitscreen" ) : ( "#GameUI_MainMenu_PlaySolo" ) );
+		button->SetHelpText( ( XBX_GetNumGameUsers() > 1 ) ? ( "#GameUI_MainMenu_OfflineCoOp_Tip" ) : ( "#GameUI_MainMenu_PlaySolo_Tip" ) );
+#endif
 	}
 
+#ifdef _X360
+	if ( !XBX_GetPrimaryUserIsGuest() )
+	{
+		wchar_t wszListText[ 128 ];
+		wchar_t wszPlayerName[ 128 ];
+
+		IPlayer *player1 = NULL;
+		if ( XBX_GetNumGameUsers() > 0 )
+		{
+			player1 = g_pMatchFramework->GetMatchSystem()->GetPlayerManager()->GetLocalPlayer( XBX_GetUserId( 0 ) );
+		}
+
+		IPlayer *player2 = NULL;
+		if ( XBX_GetNumGameUsers() > 1 )
+		{
+			player2 = g_pMatchFramework->GetMatchSystem()->GetPlayerManager()->GetLocalPlayer( XBX_GetUserId( 1 ) );
+		}
+
+		if ( player1 )
+		{
+			Label *pLblPlayer1GamerTag = dynamic_cast< Label* >( FindChildByName( "LblPlayer1GamerTag" ) );
+			if ( pLblPlayer1GamerTag )
+			{
+				g_pVGuiLocalize->ConvertANSIToUnicode( player1->GetName(), wszPlayerName, sizeof( wszPlayerName ) );
+				g_pVGuiLocalize->ConstructString( wszListText, sizeof( wszListText ), g_pVGuiLocalize->Find( "#GameUI_MainMenu_LocalProfilePlayer1" ), 1, wszPlayerName );
+
+				pLblPlayer1GamerTag->SetVisible( true );
+				pLblPlayer1GamerTag->SetText( wszListText );
+			}
+		}
+
+		if ( player2 )
+		{
+			Label *pLblPlayer2GamerTag = dynamic_cast< Label* >( FindChildByName( "LblPlayer2GamerTag" ) );
+			if ( pLblPlayer2GamerTag )
+			{
+				g_pVGuiLocalize->ConvertANSIToUnicode( player2->GetName(), wszPlayerName, sizeof( wszPlayerName ) );
+				g_pVGuiLocalize->ConstructString( wszListText, sizeof( wszListText ), g_pVGuiLocalize->Find( "#GameUI_MainMenu_LocalProfilePlayer2" ), 1, wszPlayerName );
+
+				pLblPlayer2GamerTag->SetVisible( true );
+				pLblPlayer2GamerTag->SetText( wszListText );
+
+				// in split screen, have player2 gamer tag instead of enable, and disable
+				SetControlVisible( "LblPlayer2DisableIcon", true );
+				SetControlVisible( "LblPlayer2Disable", true );
+				SetControlVisible( "LblPlayer2Enable", false );
+			}
+		}
+		else
+		{
+			SetControlVisible( "LblPlayer2DisableIcon", false );
+			SetControlVisible( "LblPlayer2Disable", false );
+
+			// not in split screen, no player2 gamertag, instead have enable
+			SetControlVisible( "LblPlayer2GamerTag", false );
+			SetControlVisible( "LblPlayer2Enable", true );
+		}
+	}
+#endif
 
 	if ( IsPC() )
 	{
@@ -852,7 +1124,7 @@ void MainMenu::ApplySchemeSettings( IScheme *pScheme )
 #endif
 
 			int32 availableBytes, totalBytes = 0;
-			/*if ( pRemoteStorage && pRemoteStorage->GetQuota( &totalBytes, &availableBytes ) )
+			if ( pRemoteStorage && pRemoteStorage->GetQuota( &totalBytes, &availableBytes ) )
 			{
 				if ( totalBytes > 0 )
 				{
@@ -860,7 +1132,7 @@ void MainMenu::ApplySchemeSettings( IScheme *pScheme )
 				}
 			}
 
-			pFlyout->SetControlEnabled( "BtnCloud", bUsesCloud );*/
+			pFlyout->SetControlEnabled( "BtnCloud", bUsesCloud );
 		}
 	}
 
@@ -937,22 +1209,27 @@ void MainMenu::Demo_DisableButtons( void )
 	}
 }
 
-void MainMenu::AcceptNewGameCallback()
-{
-	if ( MainMenu *pMainMenu = static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) ) )
-	{
-		pMainMenu->OnCommand( "SoloPlay_NoConfirm" );
-	}
-}
-
 void MainMenu::AcceptCommentaryRulesCallback() 
 {
 	if ( MainMenu *pMainMenu = static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) ) )
 	{
-		engine->ExecuteClientCmd( "sv_cheats 1" );
-		engine->ExecuteClientCmd( "commentary 1" );
-		pMainMenu->OnCommand( "SoloPlay_NoConfirm" );
+		KeyValues *pSettings = KeyValues::FromString(
+			"settings",
+			" system { "
+				" network offline "
+			" } "
+			" game { "
+				" mode single_mission "
+			" } "
+			" options { "
+				" play commentary "
+			" } "
+			);
+		KeyValues::AutoDelete autodelete( pSettings );
+
+		g_pMatchFramework->CreateSession( pSettings );
 	}
+
 }
 
 void MainMenu::AcceptSplitscreenDisableCallback()
@@ -971,22 +1248,6 @@ void MainMenu::AcceptQuitGameCallback()
 	}
 }
 
-void MainMenu::AcceptSaveOverCallback()
-{
-	if ( MainMenu *pMainMenu = static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) ) )
-	{
-		pMainMenu->OnCommand( "SaveGame" );
-	}
-}
-
-void MainMenu::AcceptLoadCallback()
-{
-	if ( MainMenu *pMainMenu = static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) ) )
-	{
-		pMainMenu->OnCommand( "LoadLastSave_NoConfirm" );
-	}
-}
-
 void MainMenu::AcceptVersusSoftLockCallback()
 {
 	if ( MainMenu *pMainMenu = static_cast< MainMenu* >( CBaseModPanel::GetSingleton().GetWindow( WT_MAINMENU ) ) )
@@ -994,3 +1255,30 @@ void MainMenu::AcceptVersusSoftLockCallback()
 		pMainMenu->OnCommand( "FlmVersusFlyout" );
 	}
 }
+
+
+#ifndef _X360
+CON_COMMAND_F( openserverbrowser, "Opens server browser", 0 )
+{
+	bool isSteam = IsPC() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils();
+	if ( isSteam )
+	{
+		// show the server browser
+		g_VModuleLoader.ActivateModule("Servers");
+
+		// if an argument was passed, that's the tab index to show, send a message to server browser to switch to that tab
+		if ( args.ArgC() > 1 )
+		{
+			KeyValues *pKV = new KeyValues( "ShowServerBrowserPage" );
+			pKV->SetInt( "page", atoi( args[1] ) );
+			g_VModuleLoader.PostMessageToAllModules( pKV );
+		}
+
+#ifdef INFESTED_DLL
+		KeyValues *pSchemeKV = new KeyValues( "SetCustomScheme" );
+		pSchemeKV->SetString( "SchemeName", "SwarmServerBrowserScheme" );
+		g_VModuleLoader.PostMessageToAllModules( pSchemeKV );
+#endif
+	}
+}
+#endif

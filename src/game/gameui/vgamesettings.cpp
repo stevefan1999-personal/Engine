@@ -123,7 +123,7 @@ void GameSettings::PaintBackground()
 	const char *pTitle = "";
 
 	char chBufferSubTitle[128];
-	const char *pSubtitle = "#L4D360UI_GameSettings_Description";
+	const char *pSubtitle = "#GameUI_GameSettings_Description";
 
 	char const *szNetwork = m_pSettings->GetString( "system/network", "offline" );
 
@@ -140,7 +140,7 @@ void GameSettings::PaintBackground()
 		if ( !Q_stricmp( "lan", szNetwork ) )
 			szAccess = szNetwork;
 
-		Q_snprintf( chBufferSubTitle, sizeof( chBufferSubTitle ), "#L4D360UI_Access_%s", szAccess );
+		Q_snprintf( chBufferSubTitle, sizeof( chBufferSubTitle ), "#GameUI_Access_%s", szAccess );
 		pSubtitle = chBufferSubTitle;
 	}
 	m_pTitle->SetText( pTitle );
@@ -201,7 +201,7 @@ void GameSettings::Activate()
 
 	if ( m_drpDifficulty )
 	{
-		m_drpDifficulty->SetCurrentSelection( CFmtStr( "#L4D360UI_Difficulty_%s",
+		m_drpDifficulty->SetCurrentSelection( CFmtStr( "#GameUI_Difficulty_%s",
 			m_pSettings->GetString( "game/difficulty", "normal" ) ) );
 
 		if ( FlyoutMenu* flyout = m_drpDifficulty->GetCurrentFlyout() )
@@ -212,11 +212,11 @@ void GameSettings::Activate()
 	{
 		if ( m_pSettings->GetInt( "game/hardcoreFF", 0 ) == 1 )
 		{
-			m_drpFriendlyFire->SetCurrentSelection( "#L4D360UI_HardcoreFF" );
+			m_drpFriendlyFire->SetCurrentSelection( "#GameUI_HardcoreFF" );
 		}
 		else
 		{
-			m_drpFriendlyFire->SetCurrentSelection( "#L4D360UI_RegularFF" );
+			m_drpFriendlyFire->SetCurrentSelection( "#GameUI_RegularFF" );
 		}
 
 		if ( FlyoutMenu* flyout = m_drpFriendlyFire->GetCurrentFlyout() )
@@ -227,11 +227,11 @@ void GameSettings::Activate()
 	{
 		if ( m_pSettings->GetInt( "game/onslaught", 0 ) == 1 )
 		{
-			m_drpOnslaught->SetCurrentSelection( "#L4D360UI_OnslaughtEnabled" );
+			m_drpOnslaught->SetCurrentSelection( "#GameUI_OnslaughtEnabled" );
 		}
 		else
 		{
-			m_drpOnslaught->SetCurrentSelection( "#L4D360UI_OnslaughtDisabled" );
+			m_drpOnslaught->SetCurrentSelection( "#GameUI_OnslaughtDisabled" );
 		}
 
 		if ( FlyoutMenu* flyout = m_drpOnslaught->GetCurrentFlyout() )
@@ -303,7 +303,7 @@ void GameSettings::Activate()
 		szDefaultServerToCreate = "listen"; // force listen servers by default since we don't have dedicated servers for now
 		char const *szServerType = m_pSettings->GetString( "options/server", szDefaultServerToCreate );
 		char chServerType[64];
-		Q_snprintf( chServerType, sizeof( chServerType ), "#L4D360UI_ServerType_%s", szServerType );
+		Q_snprintf( chServerType, sizeof( chServerType ), "#GameUI_ServerType_%s", szServerType );
 		m_drpServerType->SetCurrentSelection( chServerType );
 	}
 }
@@ -388,13 +388,13 @@ void GameSettings::SelectNetworkAccess( char const *szNetworkType, char const *s
 	{
 		if ( !Q_stricmp( "public", szAccessType ) && !Q_stricmp( "LIVE", szNetworkType ) && !ui_game_allow_create_public.GetBool() )
 		{
-			button->SetText( "#L4D360UI_Join_At_Start" );
-			button->SetHelpText( "#L4D360UI_GameSettings_Tooltip_Join_At_Start" );
+			button->SetText( "#GameUI_Join_At_Start" );
+			button->SetHelpText( "#GameUI_GameSettings_Tooltip_Join_At_Start" );
 		}
 		else
 		{
-			button->SetText( "#L4D360UI_GameSettings_Create_Lobby" );
-			button->SetHelpText( "#L4D360UI_GameSettings_Tooltip_Create_Lobby" );
+			button->SetText( "#GameUI_GameSettings_Create_Lobby" );
+			button->SetHelpText( "#GameUI_GameSettings_Tooltip_Create_Lobby" );
 		}
 	}
 	*/
@@ -591,7 +591,7 @@ void GameSettings::OnCommand(const char *command)
 		// Act as though 360 back button was pressed
 		OnKeyCodePressed( ButtonCodeToJoystickButtonCode( KEY_XBUTTON_B, CBaseModPanel::GetSingleton().GetLastActiveUserId() ) );
 	}
-	else if ( const char *szDifficultyValue = StringAfterPrefix( command, "#L4D360UI_Difficulty_" ) )
+	else if ( const char *szDifficultyValue = StringAfterPrefix( command, "#GameUI_Difficulty_" ) )
 	{
 		KeyValues *pSettings = KeyValues::FromString(
 			"update",
@@ -613,7 +613,7 @@ void GameSettings::OnCommand(const char *command)
 				pFlyout->SetListener( this );
 		}
 	}
-	else if ( !Q_strcmp( command, "#L4D360UI_RegularFF" ) )
+	else if ( !Q_strcmp( command, "#GameUI_RegularFF" ) )
 	{
 		KeyValues *pSettings = KeyValues::FromString(
 			"update",
@@ -635,7 +635,7 @@ void GameSettings::OnCommand(const char *command)
 				pFlyout->SetListener( this );
 		}
 	}
-	else if ( !Q_strcmp( command, "#L4D360UI_HardcoreFF" ) )
+	else if ( !Q_strcmp( command, "#GameUI_HardcoreFF" ) )
 	{
 		KeyValues *pSettings = KeyValues::FromString(
 			"update",
@@ -657,7 +657,7 @@ void GameSettings::OnCommand(const char *command)
 				pFlyout->SetListener( this );
 		}
 	}
-	else if ( !Q_strcmp( command, "#L4D360UI_OnslaughtDisabled" ) )
+	else if ( !Q_strcmp( command, "#GameUI_OnslaughtDisabled" ) )
 	{
 		KeyValues *pSettings = KeyValues::FromString(
 			"update",
@@ -679,7 +679,7 @@ void GameSettings::OnCommand(const char *command)
 				pFlyout->SetListener( this );
 		}
 	}
-	else if ( !Q_strcmp( command, "#L4D360UI_OnslaughtEnabled" ) )
+	else if ( !Q_strcmp( command, "#GameUI_OnslaughtEnabled" ) )
 	{
 		KeyValues *pSettings = KeyValues::FromString(
 			"update",
@@ -701,7 +701,7 @@ void GameSettings::OnCommand(const char *command)
 				pFlyout->SetListener( this );
 		}
 	}
-	else if ( const char *szRoundLimitValue = StringAfterPrefix( command, "#L4D360UI_RoundLimit_" ) )
+	else if ( const char *szRoundLimitValue = StringAfterPrefix( command, "#GameUI_RoundLimit_" ) )
 	{
 		KeyValues *pSettings = new KeyValues( "update" );
 		KeyValues::AutoDelete autodelete( pSettings );
@@ -712,7 +712,7 @@ void GameSettings::OnCommand(const char *command)
 
 
 	}
-	else if ( const char *szServerTypeValue = StringAfterPrefix( command, "#L4D360UI_ServerType_" ) )
+	else if ( const char *szServerTypeValue = StringAfterPrefix( command, "#GameUI_ServerType_" ) )
 	{
 	KeyValues *pSettings = KeyValues::FromString(
 			"update",
@@ -906,7 +906,7 @@ void GameSettings::OnNotifyChildFocus( vgui::Panel* child )
 // 		if ( command )
 // 		{
 // 			const char* commandValue = command->GetString( "command", NULL );
-// 			if ( char const *szChapterName = StringAfterPrefix( commandValue, "#L4D360UI_Chapter_" ) )
+// 			if ( char const *szChapterName = StringAfterPrefix( commandValue, "#GameUI_Chapter_" ) )
 // 			{
 // 				UpdateMissionImage( atoi( szChapterName ) );
 // 			}
@@ -1026,17 +1026,17 @@ void GameSettings::UpdateFooter()
 		bDoHints = ( XBX_IsLocalized() == false );
 #endif
 		footer->SetButtons( FB_ABUTTON | FB_BBUTTON, FF_AB_ONLY, bDoHints );
-		footer->SetButtonText( FB_ABUTTON, "#L4D360UI_Select" );
+		footer->SetButtonText( FB_ABUTTON, "#GameUI_Select" );
 
 		if ( m_bBackButtonMeansDone )
 		{
 			// No special button needed in these menus as backing out is considered "Done"
 			// There's effectively no way to "Cancel"
-			footer->SetButtonText( FB_BBUTTON, "#L4D360UI_Done" );
+			footer->SetButtonText( FB_BBUTTON, "#GameUI_Done" );
 		}
 		else
 		{
-			footer->SetButtonText( FB_BBUTTON, "#L4D360UI_Cancel" );
+			footer->SetButtonText( FB_BBUTTON, "#GameUI_Cancel" );
 		}
 	}
 }

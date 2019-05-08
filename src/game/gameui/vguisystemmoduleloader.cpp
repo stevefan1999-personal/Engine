@@ -89,7 +89,7 @@ bool CVGuiSystemModuleLoader::InitializeAllModules(CreateInterfaceFn *factorylis
 		if (!m_Modules[i].moduleInterface->Initialize(factorylist, factorycount))
 		{
 			bSuccess = false;
-			Warning("Platform Error: module failed to initialize\n");
+			Error("Platform Error: module failed to initialize\n");
 		}
 	}
 
@@ -106,7 +106,7 @@ bool CVGuiSystemModuleLoader::InitializeAllModules(CreateInterfaceFn *factorylis
 		if (!m_Modules[i].moduleInterface->PostInitialize(moduleFactories, m_Modules.Count()))
 		{
 			bSuccess = false;
-			Warning("Platform Error: module failed to initialize\n");
+			Error("Platform Error: module failed to initialize\n");
 		}
 		
 #ifdef GAMEUI_EXPORTS
@@ -135,7 +135,7 @@ bool CVGuiSystemModuleLoader::LoadPlatformModules(CreateInterfaceFn *factorylist
 
 	// load platform menu
 	KeyValues *kv = new KeyValues("Platform");
-	if (!kv->LoadFromFile(g_pFullFileSystem, "steam/games/PlatformMenu.vdf", "CORE"))
+	if (!kv->LoadFromFile(g_pFullFileSystem, "steam/games/PlatformMenu.vdf", "PLATFORM"))
 	{
 		kv->deleteThis();
 		return false;
@@ -162,7 +162,7 @@ bool CVGuiSystemModuleLoader::LoadPlatformModules(CreateInterfaceFn *factorylist
 		CSysModule *mod = g_pFullFileSystem->LoadModule(dllPath, "EXECUTABLE_PATH");
 		if (!mod)
 		{
-			Warning("Platform Error: bad module '%s', not loading\n", it->GetString("dll"));
+			Error("Platform Error: bad module '%s', not loading\n", it->GetString("dll"));
 			bSuccess = false;
 			continue;
 		}

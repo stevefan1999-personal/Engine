@@ -20,8 +20,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#define GAMEIU_MULTI_LOADSCREENS
-
 using namespace vgui;
 using namespace BaseModUI;
 
@@ -63,7 +61,7 @@ LoadingProgress::LoadingProgress(Panel *parent, const char *panelName, LoadingWi
 	m_botFlags = 0xFF;
 	
 	memset( m_PlayerNames, 0, sizeof( m_PlayerNames ) );
-	// const char *pPlayerNames[NUM_LOADING_CHARACTERS] = { "#L4D360UI_NamVet", "#L4D360UI_TeenGirl", "#L4D360UI_Biker", "#L4D360UI_Manager" };
+	// const char *pPlayerNames[NUM_LOADING_CHARACTERS] = { "#GameUI_NamVet", "#GameUI_TeenGirl", "#GameUI_Biker", "#GameUI_Manager" };
 	const char *pPlayerNames[NUM_LOADING_CHARACTERS] = { "", "", "", "" };
 	for ( int k = 0; k < NUM_LOADING_CHARACTERS; ++ k )
 		Q_strncpy( m_PlayerNames[k], pPlayerNames[k], MAX_PLAYER_NAME_LENGTH );
@@ -336,9 +334,8 @@ void LoadingProgress::PaintBackground()
 		//  alias
 
 		int nIntegerWide = f * wide;		
-		//float flUsedFrac = (float)nIntegerWide / (float)wide;
+		float flUsedFrac = (float)nIntegerWide / (float)wide;
 		
-		/*
 		DrawTexturedRectParms_t params;
 		params.x0 = x;
 		params.y0 = y;
@@ -346,9 +343,7 @@ void LoadingProgress::PaintBackground()
 		params.y1 = y + tall;
 		params.s0 = 0;
 		params.s1 = flUsedFrac;
-		surface()->DrawTexturedRectEx( &params );
-		*/
-		surface()->DrawTexturedRect(x, y, x + nIntegerWide, y + tall);
+		surface()->DrawTexturedRectEx( &params );		
 	}
 
 	// Need to call this periodically to collect sign in and sign out notifications,
@@ -486,7 +481,7 @@ void LoadingProgress::SetPosterData( KeyValues *pMissionInfo, KeyValues *pChapte
 
 	RearrangeNames( pMissionInfo->GetString( "poster/character_order", NULL ), pPlayerNames );
 
-	Q_snprintf( m_szGameMode, sizeof( m_szGameMode ), "#L4D360UI_Loading_GameMode_%s", pszGameMode );
+	Q_snprintf( m_szGameMode, sizeof( m_szGameMode ), "#GameUI_Loading_GameMode_%s", pszGameMode );
 }
 
 //rearrange names to match the poster character order... sigh..
@@ -576,21 +571,16 @@ void LoadingProgress::SetupPoster( void )
 		static ConVarRef mat_xbox_iswidescreen( "mat_xbox_iswidescreen" );
 		bool bIsWidescreen = mat_xbox_iswidescreen.GetBool();
 #endif
-
-#ifdef GAMEIU_MULTI_LOADSCREENS
-		const char *pszPosterImage = NULL;
+		const char *pszPosterImage;
 		int nChosenLoadingImage = RandomInt( 1, 4 );
 		switch( nChosenLoadingImage )
 		{
-			case 1: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "loading/BGFX01_wide" : "loading/BGFX01"; break;
-			case 2: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "loading/BGFX02_wide" : "loading/BGFX02"; break;
-			case 3: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "loading/BGFX03_wide" : "loading/BGFX03"; break;
-			case 4: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "loading/BGFX04_wide" : "loading/BGFX04"; break;
+			case 1: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "swarm/loading/BGFX01_wide" : "swarm/loading/BGFX01"; break;
+			case 2: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "swarm/loading/BGFX02_wide" : "swarm/loading/BGFX02"; break;
+			case 3: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "swarm/loading/BGFX03_wide" : "swarm/loading/BGFX03"; break;
+			case 4:
+			default: pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "swarm/loading/BGFX04_wide" : "swarm/loading/BGFX04"; break;
 		}
-
-#else
-		const char *pszPosterImage =  pszPosterImage = ( m_bFullscreenPoster && bIsWidescreen ) ? "loading/BGFX01_wide" : "loading/BGFX01";
-#endif
 
 		// if the image was cached this will just hook it up, otherwise it will load it
 		pPoster->SetImage( pszPosterImage );

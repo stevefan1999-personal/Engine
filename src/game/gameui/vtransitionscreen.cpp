@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VTransitionScreen.h"
 #include "EngineInterface.h"
 #include "vgui/ISurface.h"
@@ -80,7 +79,7 @@ void CTransitionScreen::PaintBackground()
 	int xPos = 0.90f * wide;
 	int yPos = 0.84f * tall;
 
-	const wchar_t *pString = g_pVGuiLocalize->Find( "#L4D360UI_Installer_Loading" );
+	const wchar_t *pString = g_pVGuiLocalize->FindSafe( "#GameUI_Installer_Loading" );
 	int textWide, textTall;
 	surface()->GetTextSize( m_hFont, pString, textWide, textTall );
 	surface()->DrawSetTextPos( xPos - textWide, yPos - textTall/2 );

@@ -79,7 +79,15 @@ void CLoadingTipPanel::SetupTips( void )
 		m_Tips.AddToTail( info );
 	}
 #else
-	
+	TitleAchievementsDescription_t const *desc = g_pMatchFramework->GetMatchTitle()->DescribeTitleAchievements();
+	for ( ; desc->m_szAchievementName; ++desc )
+	{
+		sTipInfo info;
+		V_snprintf( info.szTipTitle, MAX_TIP_LENGTH, "#%s_NAME", desc->m_szAchievementName );
+		V_snprintf( info.szTipString, MAX_TIP_LENGTH, "#%s_DESC", desc->m_szAchievementName );
+		V_snprintf( info.szTipImage, MAX_TIP_LENGTH, "achievements/%s", desc->m_szAchievementName );
+		m_Tips.AddToTail( info );
+	}
 #endif
 }
 
@@ -175,5 +183,15 @@ void CLoadingTipPanel::PaintBackground( void )
 
 void PrecacheLoadingTipIcons()
 {
-	
+	TitleAchievementsDescription_t const *desc = g_pMatchFramework->GetMatchTitle()->DescribeTitleAchievements();
+	for ( ; desc->m_szAchievementName; ++desc )
+	{
+		CFmtStr imageString( "vgui/achievements/%s", desc->m_szAchievementName );
+		int nImageId = vgui::surface()->DrawGetTextureId( imageString );
+		if ( nImageId == -1 )
+		{
+			nImageId = vgui::surface()->CreateNewTextureID();
+			vgui::surface()->DrawSetTextureFile( nImageId, imageString, true, false );	
+		}
+	}
 }

@@ -7,7 +7,6 @@
 #ifndef __VLOADINGPROGRESS_H__
 #define __VLOADINGPROGRESS_H__
 
-#include "cbase.h"
 #include "basemodui.h"
 #include "vgui/IScheme.h"
 #include "const.h"
@@ -44,7 +43,6 @@ public:
 
 	void				SetProgress( float progress );
 	float				GetProgress();
-	bool				IsDoneLoading() { return true; };
 
 	void				SetLoadingType( LoadingType loadingType );
 	LoadingType			GetLoadingType();
@@ -75,7 +73,6 @@ private:
 	LoadingWindowType	m_LoadingWindowType;
 
 	bool				m_bFullscreenPoster;
-	bool				m_bLoadedFully;
 
 	// Poster Data
 	char				m_PlayerNames[NUM_LOADING_CHARACTERS][MAX_PLAYER_NAME_LENGTH];

@@ -14,6 +14,23 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+using namespace vgui;
+
+static int g_nGameUIActiveSplitscreenPlayerSlot = 0;
+
+int GetGameUIActiveSplitScreenPlayerSlot()
+{
+	return g_nGameUIActiveSplitscreenPlayerSlot;
+}
+
+void SetGameUIActiveSplitScreenPlayerSlot( int nSlot )
+{
+	if ( g_nGameUIActiveSplitscreenPlayerSlot != nSlot )
+	{
+		g_nGameUIActiveSplitscreenPlayerSlot = nSlot;
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Scans player names
 //Passes the player name to be checked in a KeyValues pointer
@@ -100,15 +117,31 @@ CGameUIConVarRef::CGameUIConVarRef( const char *pName, bool bIgnoreMissing )
 
 void CGameUIConVarRef::Init( const char *pName, bool bIgnoreMissing )
 {
-	char pchName[ 256 ];
-	Q_strncpy( pchName, pName, sizeof( pchName ) );
-
-	m_pConVar = g_pCVar ? g_pCVar->FindVar( pchName ) : &s_EmptyConVar;
-	if ( !m_pConVar )
+	for ( int i = 0; i < MAX_SPLITSCREEN_CLIENTS; ++i )
 	{
-		m_pConVar = &s_EmptyConVar;
+		cv_t &info = m_Info[ i ];
+		char pchName[ 256 ];
+		if ( i != 0 )
+		{
+			Q_snprintf( pchName, sizeof( pchName ), "%s%d", pName, i + 1 );
+		}
+		else
+		{
+			Q_strncpy( pchName, pName, sizeof( pchName ) );
+		}
+
+		info.m_pConVar = g_pCVar ? g_pCVar->FindVar( pchName ) : &s_EmptyConVar;
+		if ( !info.m_pConVar )
+		{
+			info.m_pConVar = &s_EmptyConVar;
+			if ( i > 0 )
+			{
+				// Point at slot zero instead, in case we got in here with a non FCVAR_SS var...
+				info.m_pConVar = m_Info[ 0 ].m_pConVar;
+			}
+		}
+		info.m_pConVarState = static_cast< ConVar * >( info.m_pConVar );
 	}
-	m_pConVarState = static_cast< ConVar * >( m_pConVar );
 
 	if ( !IsValid() )
 	{
@@ -126,21 +159,45 @@ void CGameUIConVarRef::Init( const char *pName, bool bIgnoreMissing )
 
 CGameUIConVarRef::CGameUIConVarRef( IConVar *pConVar )
 {
-	m_pConVar = pConVar ? pConVar : &s_EmptyConVar;
-	m_pConVarState = static_cast< ConVar * >( m_pConVar );
+	cv_t &info = m_Info[ 0 ];
+	info.m_pConVar = pConVar ? pConVar : &s_EmptyConVar;
+	info.m_pConVarState = static_cast< ConVar * >( info.m_pConVar );
 
-	char pchName[ 256 ];
-	Q_snprintf( pchName, sizeof( pchName ), "%s", pConVar->GetName());
-
-	m_pConVar = g_pCVar ? g_pCVar->FindVar( pchName ) : &s_EmptyConVar;
-	if ( !m_pConVar )
+	for ( int i = 1; i < MAX_SPLITSCREEN_CLIENTS; ++i )
 	{
-		m_pConVar = &s_EmptyConVar;
+		info = m_Info[ i ];
+		char pchName[ 256 ];
+		Q_snprintf( pchName, sizeof( pchName ), "%s%d", pConVar->GetName(), i + 1 );
+
+		info.m_pConVar = g_pCVar ? g_pCVar->FindVar( pchName ) : &s_EmptyConVar;
+		if ( !info.m_pConVar )
+		{
+			info.m_pConVar = &s_EmptyConVar;
+			if ( i > 0 )
+			{
+				// Point at slot zero instead, in case we got in here with a non FCVAR_SS var...
+				info.m_pConVar = m_Info[ 0 ].m_pConVar;
+			}
+		}
+		info.m_pConVarState = static_cast< ConVar * >( info.m_pConVar );
 	}
-	m_pConVarState = static_cast< ConVar * >( m_pConVar );
 }
 
 bool CGameUIConVarRef::IsValid() const
 {
-	return m_pConVar != &s_EmptyConVar;
+	return m_Info[ 0 ].m_pConVar != &s_EmptyConVar;
 }
+
+//-----------------------------------------------------------------------------
+
+CGameUiSetActiveSplitScreenPlayerGuard::CGameUiSetActiveSplitScreenPlayerGuard( int slot )
+{
+	m_nSaveSlot = GetGameUIActiveSplitScreenPlayerSlot();
+	SetGameUIActiveSplitScreenPlayerSlot(slot);
+}
+
+CGameUiSetActiveSplitScreenPlayerGuard::~CGameUiSetActiveSplitScreenPlayerGuard()
+{
+	SetGameUIActiveSplitScreenPlayerSlot(m_nSaveSlot);
+}
+

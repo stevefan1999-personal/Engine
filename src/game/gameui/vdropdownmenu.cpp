@@ -1,4 +1,3 @@
-#include "cbase.h"
 #include "VDropDownMenu.h"
 #include "VHybridButton.h"
 #include "VFlyoutMenu.h"
@@ -28,7 +27,7 @@ BaseClass( parent, panelName )
 
 	SetConsoleStylePanel( true );
 
-	LoadControlSettings( "resource/ui/core/DropDownMenu.res" );
+	//	LoadControlSettings( "Resource/UI/BaseModUI/DropDownMenu.res" );
 }
 
 DropDownMenu::~DropDownMenu()
@@ -279,7 +278,7 @@ void DropDownMenu::ApplySettings( KeyValues* inResourceData )
 
 	if ( m_hCurrentFlyout.Get() )
 	{
-		//m_pnlBackground = m_hCurrentFlyout->FindChildByName( "PnlBackground" );
+		m_pnlBackground = m_hCurrentFlyout->FindChildByName( "PnlBackground" );
 	}
 
 	if ( m_pButton )

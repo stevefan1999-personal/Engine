@@ -1,4 +1,3 @@
-#include "cbase.h"
 #include "VSliderControl.h"
 #include "VHybridButton.h"
 #include "vgui/ISurface.h"
@@ -42,8 +41,6 @@ BaseClass( parent, panelName )
 	m_conVarDefaultRef = NULL;
 
 	m_bDirty = false;
-
-	SetProportional( true );
 
 	LoadControlSettings( "Resource/UI/BaseModUI/SliderControl.res" );
 }
@@ -246,14 +243,12 @@ void SliderControl::Reset()
 void SliderControl::ResetSliderPosAndDefaultMarkers()
 {
 	if( m_prgValue )
-	{	
-		
+	{
 		int centery = GetTall() / 2;
 
 		int xpos, ypos;
 		ypos = centery - m_prgValue->GetTall() / 2;
 		xpos = GetWide() - m_prgValue->GetWide();
-		// control this from the resource file
 		m_prgValue->SetPos( xpos, ypos );
 
 		if ( m_defaultMark )
@@ -265,8 +260,7 @@ void SliderControl::ResetSliderPosAndDefaultMarkers()
 				fInterp = 1.0f - fInterp;
 			}
 
-			//m_defaultMark->SetPos( xpos + ( m_prgValue->GetWide() - m_defaultMark->GetWide() ) * fInterp, ypos - 3 );
-			m_defaultMark->SetPos( xpos + ( m_prgValue->GetWide() - m_defaultMark->GetWide() ) * fInterp, ypos - (GetTall() / 2) );
+			m_defaultMark->SetPos( xpos + ( m_prgValue->GetWide() - m_defaultMark->GetWide() ) * fInterp, ypos - 3 );
 			m_defaultMark->SetBgColor( m_unfocusColor );
 			m_defaultMark->SetVisible( IsEnabled() );
 		}
@@ -337,11 +331,11 @@ void SliderControl::ApplySettings( KeyValues* inResourceData )
 
 	if( m_button )
 	{
-		/*int x, y, wide, tall;
+		int x, y, wide, tall;
 		int newTall = m_button->GetTall();
 		GetBounds( x, y, wide, tall );
 		// move the y up so the control stays up when we make it taller
-		SetBounds( x, y - (newTall-tall)/2, wide, newTall );*/
+		SetBounds( x, y - (newTall-tall)/2, wide, newTall );
 	}
 
 	ResetSliderPosAndDefaultMarkers();

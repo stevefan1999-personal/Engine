@@ -80,7 +80,6 @@ public:
 	void		UpdateFooterHelpText();
 
 	char const  *GetHelpText( bool bEnabled ) const;
-	//char const  *GetText() const;
 
 	void		SetShowDropDownIndicator( bool bShowIndicator ) { m_bShowDropDownIndicator = bShowIndicator; }
 	void		SetOverrideDropDownIndicator( bool bOverrideDropDownIndicator ) { m_bOverrideDropDownIndicator = bOverrideDropDownIndicator; }
@@ -135,8 +134,6 @@ private:
 
 	CUtlString	m_enabledToolText;
 	CUtlString	m_disabledToolText;
-
-	CUtlString	m_labelText;
 	
 	ButtonStyle_t m_nStyle;
 

@@ -21,7 +21,7 @@ class GenericPanelList : public vgui::Panel
 	DECLARE_CLASS_SIMPLE( GenericPanelList, vgui::Panel );
 
 public:
-	enum ITEM_SELECTION_MODE { ISM_PERITEM = 1, ISM_ELEVATOR = 2, ISM_DIRECTIONAL = 3, ISM_ALPHA_INVISIBLE = 4 };
+	enum ITEM_SELECTION_MODE { ISM_PERITEM = 1, ISM_ELEVATOR = 2, ISM_ALPHA_INVISIBLE = 4 };
 	GenericPanelList(vgui::Panel *parent, const char *panelName, int selectionModeMask);
 	virtual ~GenericPanelList();
 

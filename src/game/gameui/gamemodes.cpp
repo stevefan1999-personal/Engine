@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "gamemodes.h"
 #include "fmtstr.h"
 #include "vgui/ISurface.h"
@@ -206,6 +205,7 @@ void GameModes::ApplySettings( KeyValues *pInResourceData )
 
 	const char *pNavUp = pInResourceData->GetString( "navUp", "" );
 	const char *pNavDown = pInResourceData->GetString( "navDown", "" );
+
 	int wideAtOpen = pInResourceData->GetInt( "wideatopen", 0 );
 
 	// need to reset due to video mode change, alt+tab, etc
@@ -472,7 +472,6 @@ void GameModes::PaintBackground()
 				vgui::surface()->DrawSetColor( picColor );
 				vgui::surface()->DrawSetTexture( m_GameModeInfos[m_nActive].m_nImageId );
 
-				/*
 				DrawTexturedRectParms_t parms;
 				parms.x0 = x;
 				parms.y0 = y;
@@ -480,8 +479,6 @@ void GameModes::PaintBackground()
 				parms.y1 = y+h;
 				parms.angle = nActiveAngle;
 				vgui::surface()->DrawTexturedRectEx( &parms );
-				*/
-				vgui::surface()->DrawTexturedRect(x, y, x+w, y+h);
 
 				if ( bHasFocus || bIsOpen )
 				{
@@ -519,7 +516,6 @@ void GameModes::PaintBackground()
 				vgui::surface()->DrawSetColor( picColor );
 				vgui::surface()->DrawSetTexture( m_GameModeInfos[iMode].m_nImageId );
 
-				/*
 				DrawTexturedRectParms_t parms;
 				parms.x0 = x;
 				parms.y0 = y;
@@ -527,8 +523,6 @@ void GameModes::PaintBackground()
 				parms.y1 = y+h;
 				parms.angle = ang;
 				vgui::surface()->DrawTexturedRectEx( &parms );
-				*/
-				vgui::surface()->DrawTexturedRect(x, y, x+w, y+h);
 
 				vgui::surface()->DrawSetTexture( m_nBorderImageId );
 				//vgui::surface()->DrawTexturedRectEx( &parms );
@@ -553,7 +547,6 @@ void GameModes::PaintBackground()
 				vgui::surface()->DrawSetColor( picColor );
 				vgui::surface()->DrawSetTexture( m_GameModeInfos[iMode].m_nImageId );
 
-				/*
 				parms.x0 = x;
 				parms.y0 = y;
 				parms.x1 = x+w;
@@ -564,8 +557,6 @@ void GameModes::PaintBackground()
 				parms.t1 = 1;
 				parms.angle = ang;
 				vgui::surface()->DrawTexturedRectEx( &parms );
-				*/
-				vgui::surface()->DrawTexturedRect(x, y, x+w, y+h);
 			}
 		}
 		else if ( !bSkipSubPicDraw )
@@ -857,7 +848,6 @@ int GameModes::DrawSmearBackgroundFade( int x0, int y0, int x1, int y1 )
 	// top
 	surface()->DrawSetTexture( m_nTopBorderImageId );
 
-	/*
 	DrawTexturedRectParms_t parms;
 	parms.x0 = x0;
 	parms.y0 = y0;
@@ -868,10 +858,7 @@ int GameModes::DrawSmearBackgroundFade( int x0, int y0, int x1, int y1 )
 	parms.alpha_ul = parms.alpha_ll = 0.0f;
 	parms.alpha_ur = parms.alpha_lr = 255.0f;
 	vgui::surface()->DrawTexturedRectEx( &parms );
-	*/
-	vgui::surface()->DrawTexturedRect(x0, y0, x0 + f1 * wide, y0 + topTall);
 
-	/*
 	parms.x0 = x0 + f1 * wide;
 	parms.x1 = x0 + f2 * wide;
 	parms.s0 = f1;
@@ -879,10 +866,7 @@ int GameModes::DrawSmearBackgroundFade( int x0, int y0, int x1, int y1 )
 	parms.alpha_ul = parms.alpha_ll = 255.0f;
 	parms.alpha_ur = parms.alpha_lr = 255.0f;
 	vgui::surface()->DrawTexturedRectEx( &parms );
-	*/
-	vgui::surface()->DrawTexturedRect(x0 + f1 * wide, y0, x0 + f2 * wide, y0 + topTall);
 
-	/*
 	parms.x0 = x0 + f2 * wide;
 	parms.x1 = x0 + wide;
 	parms.s0 = f2;
@@ -890,8 +874,6 @@ int GameModes::DrawSmearBackgroundFade( int x0, int y0, int x1, int y1 )
 	parms.alpha_ul = parms.alpha_ll = 255.0f;
 	parms.alpha_ur = parms.alpha_lr = 0;
 	vgui::surface()->DrawTexturedRectEx( &parms );
-	*/
-	vgui::surface()->DrawTexturedRect(x0 + f2 * wide, y0, x0 + wide, y0 + topTall);
 	y0 += topTall;
 
 	if ( middleTall )
@@ -906,7 +888,6 @@ int GameModes::DrawSmearBackgroundFade( int x0, int y0, int x1, int y1 )
 	// bottom
 	surface()->DrawSetTexture( m_nBottomBorderImageId );
 
-	/*
 	parms.x0 = x0;
 	parms.y0 = y0;
 	parms.x1 = x0 + f1 * wide;
@@ -916,10 +897,7 @@ int GameModes::DrawSmearBackgroundFade( int x0, int y0, int x1, int y1 )
 	parms.alpha_ul = parms.alpha_ll = 0;
 	parms.alpha_ur = parms.alpha_lr = 255.0f;
 	vgui::surface()->DrawTexturedRectEx( &parms );
-	*/
-	vgui::surface()->DrawTexturedRect(x0, y0, x0 + f1 * wide, y0 + bottomTall);
 
-	/*
 	parms.x0 = x0 + f1 * wide;
 	parms.x1 = x0 + f2 * wide;
 	parms.s0 = f1;
@@ -927,20 +905,15 @@ int GameModes::DrawSmearBackgroundFade( int x0, int y0, int x1, int y1 )
 	parms.alpha_ul = parms.alpha_ll = 255.0f;
 	parms.alpha_ur = parms.alpha_lr = 255.0f;
 	vgui::surface()->DrawTexturedRectEx( &parms );
-	*/
-	vgui::surface()->DrawTexturedRect(x0 + f1 * wide, y0, x0 + f2 * wide, y0 + bottomTall);
 
-	/*
 	parms.x0 = x0 + f2 * wide;
 	parms.x1 = x0 + wide;
 	parms.s0 = f2;
 	parms.s1 = 1.0f;
 	parms.alpha_ul = parms.alpha_ll = 255.0f;
 	parms.alpha_ur = parms.alpha_lr = 0;
-	*/
 	y0 += bottomTall;
-	//vgui::surface()->DrawTexturedRectEx( &parms );
-	vgui::surface()->DrawTexturedRect(x0 + f2 * wide, y0, x0 + wide, y0 + bottomTall);
+	vgui::surface()->DrawTexturedRectEx( &parms );
 
 	return topTall + middleTall + bottomTall;
 }

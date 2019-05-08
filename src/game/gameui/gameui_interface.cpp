@@ -64,8 +64,7 @@
 
 #include "basemodpanel.h"
 #include "basemodui.h"
-//#include "..\game\shared\hl2ce\hl2ce_missioninfo.h"
-#include "shared\missioninfo.h"
+
 typedef BaseModUI::CBaseModPanel UI_BASEMOD_PANEL_CLASS;
 inline UI_BASEMOD_PANEL_CLASS & GetUiBaseModPanelClass() { return UI_BASEMOD_PANEL_CLASS::GetSingleton(); }
 inline UI_BASEMOD_PANEL_CLASS & ConstructUiBaseModPanelClass() { return * new UI_BASEMOD_PANEL_CLASS(); }
@@ -89,7 +88,6 @@ IEngineSound *enginesound = NULL;
 ISoundEmitterSystemBase *soundemitterbase = NULL;
 IXboxSystem *xboxsystem = NULL;
 //AVIServices *g_pVideo = NULL;
-IMissionInfo *missioninformer = NULL;
 
 static CSteamAPIContext g_SteamAPIContext;
 CSteamAPIContext *steamapicontext = &g_SteamAPIContext;
@@ -188,9 +186,6 @@ void CGameUI::Initialize( CreateInterfaceFn factory )
 	ConVar_Register( FCVAR_CLIENTDLL );
 	ConnectTier3Libraries( &factory, 1 );
 
-	//#pragma message(FILE_LINE_STRING " !!FIXME!!")
-	gpGlobals = ((IPlayerInfoManager *)GetGameInterface("server.dll", INTERFACEVERSION_PLAYERINFOMANAGER))->GetGlobalVars();
-
 	gameuifuncs = (IGameUIFuncs *)factory(VENGINE_GAMEUIFUNCS_VERSION, NULL);
 	soundemitterbase = (ISoundEmitterSystemBase *)factory(SOUNDEMITTERSYSTEM_INTERFACE_VERSION, NULL);
 	xboxsystem = (IXboxSystem *)factory(XBOXSYSTEM_INTERFACE_VERSION, NULL);
@@ -199,16 +194,6 @@ void CGameUI::Initialize( CreateInterfaceFn factory )
 	engine = (IVEngineClient *)factory( VENGINE_CLIENT_INTERFACE_VERSION, NULL );
 
 //	g_pVideo = (IVideoServices *)factory(VIDEO_SERVICES_INTERFACE_VERSION, NULL);
-
-	CreateInterfaceFn serverfactory = g_Server.GetFactory();
-	if ( serverfactory )
-	{
-		IMissionInfo *pinformer = (IMissionInfo *) serverfactory(MISSION_INFORMER_VERSION, NULL );
-		if ( pinformer )
-		{
-			missioninformer = pinformer;
-		}	
-	}
 
 #if !defined _X360 && !defined NO_STEAM
 	SteamAPI_InitSafe();

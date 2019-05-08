@@ -3,18 +3,16 @@
 // Purpose: 
 //
 //=====================================================================================//
-
-#include "cbase.h"
 #include <tier0/platform.h>
-#include "vgetlegacydata.h"
-#include "VGenericConfirmation.h"
-#include "EngineInterface.h"
-#include "vgui_controls/Label.h"
-#include "vgui/ISurface.h"
-
 #ifdef IS_WINDOWS_PC
 #include "windows.h"
 #endif
+#include "vgetlegacydata.h"
+#include "VGenericConfirmation.h"
+#include "EngineInterface.h"
+#include "ConfigManager.h"
+#include "vgui_controls/Label.h"
+#include "vgui/ISurface.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -57,7 +55,7 @@ void GetLegacyData::ApplySchemeSettings(vgui::IScheme *pScheme)
 	// If we are still installing then change from the default button state and message defined in the res file
 	if ( IsInstalled() && IsInstalling() )
 	{
-		m_LblDesc->SetText( "#L4D360UI_GetLegacyData_Installing" );
+		m_LblDesc->SetText( "#GameUI_GetLegacyData_Installing" );
 
 		FindChildByName( "BtnOK" )->SetVisible( true );
 		FindChildByName( "BtnNo" )->SetVisible( false );

@@ -24,8 +24,16 @@
 #include "icvar.h"
 #include "tier2/tier2.h"
 
+#ifdef SWARM_DLL
+#include "matchmaking/swarm/imatchext_swarm.h"
+extern class IMatchExtSwarm *g_pMatchExtSwarm;
+#endif
+
+
+
 // engine interface singleton accessors
 extern IVEngineClient *engine;
+extern class IBik *bik;
 extern class IEngineVGui *enginevguifuncs;
 extern class IGameUIFuncs *gameuifuncs;
 extern class IEngineSound *enginesound;
@@ -34,8 +42,6 @@ extern class IXboxSystem  *xboxsystem;
 extern class IXOnline  *xonline;
 #endif
 extern class IAchievementMgr *achievementmgr; 
-#ifndef NO_STEAM
 extern class CSteamAPIContext *steamapicontext;
-#endif
 
 #endif // ENGINEINTERFACE_H

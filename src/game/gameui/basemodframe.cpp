@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include <ctype.h>
 #include "basemodframe.h"
 #include "basemodpanel.h"
@@ -26,11 +25,6 @@
 #include "filesystem.h"
 #include "fmtstr.h"
 #include "cdll_util.h"
-#include "materialsystem\itexture.h"
-
-// this is for InvalidateLayout
-// probably very stupid
-#include "..\vgui_controls\Panel.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -39,14 +33,9 @@ using namespace BaseModUI;
 using namespace vgui;
 
 //setup in GameUI_Interface.cpp
+extern class IMatchSystem *matchsystem;
 extern const char *COM_GetModDirectory( void );
 extern IGameUIFuncs *gameuifuncs;
-
-// Define me some colors
-#define BACKGROUND_CLR 53, 86, 117, 255
-#define HIGHLIGHT_CLR 97, 210, 255, 255
-#define TEXT_CLR 200, 200, 200, 255
-
 
 //=============================================================================
 //
@@ -55,7 +44,7 @@ CUtlVector< IBaseModFrameListener * > CBaseModFrame::m_FrameListeners;
 
 bool CBaseModFrame::m_DrawTitleSafeBorder = false;
 
-ConVar ui_gameui_modal( "ui_gameui_modal", "0", FCVAR_NONE, "If set, the game UI pages will take modal input focus." );
+ConVar ui_gameui_modal( "ui_gameui_modal", "1", FCVAR_RELEASE, "If set, the game UI pages will take modal input focus." );
 
 //=============================================================================
 CBaseModFrame::CBaseModFrame( vgui::Panel *parent, const char *panelName, bool okButtonEnabled, 
@@ -73,7 +62,6 @@ CBaseModFrame::CBaseModFrame( vgui::Panel *parent, const char *panelName, bool o
 	m_TitleInsetX = 6;
 	m_TitleInsetY = 4;
 	m_bIsFullScreen = false;
-	//m_bIsFullScreen = true;
 	m_bLayoutLoaded = false;
 	m_bDelayPushModalInputFocus = false;
 
@@ -84,7 +72,7 @@ CBaseModFrame::CBaseModFrame( vgui::Panel *parent, const char *panelName, bool o
 	Frame::SetTitle("", false);
 	m_LblTitle = new Label(this, "LblTitle", "");
 
-	Q_snprintf(m_ResourceName, sizeof( m_ResourceName ), "resource/ui/basemodui/%s.res", panelName);
+	Q_snprintf(m_ResourceName, sizeof( m_ResourceName ), "Resource/UI/BaseModUI/%s.res", panelName);
 
 #ifdef _X360
 	m_PassUnhandledInput = false;
@@ -259,8 +247,8 @@ void CBaseModFrame::OnKeyCodeTyped( vgui::KeyCode code )
 	case KEY_SPACE:
 		OnKeyCodePressed( ButtonCodeToJoystickButtonCode( KEY_XBUTTON_A, CBaseModPanel::GetSingleton().GetLastActiveUserId() ) );
 		break;
+
 	case KEY_ESCAPE:
-		/* ~FIX
 		// close active menu if there is one, else navigate back
 		if ( FlyoutMenu::GetActiveMenu() )
 		{
@@ -270,9 +258,7 @@ void CBaseModFrame::OnKeyCodeTyped( vgui::KeyCode code )
 		{
 			OnKeyCodePressed( ButtonCodeToJoystickButtonCode( KEY_XBUTTON_B, CBaseModPanel::GetSingleton().GetLastActiveUserId() ) );
 		}
-		*/
 		break;
-
 	}
 
 	BaseClass::OnKeyTyped( code );}
@@ -281,13 +267,10 @@ void CBaseModFrame::OnKeyCodeTyped( vgui::KeyCode code )
 
 void CBaseModFrame::OnMousePressed( vgui::MouseCode code )
 {
-	/* ~FIX
 	if( FlyoutMenu::GetActiveMenu() )
 	{
 		FlyoutMenu::CloseActiveMenu( FlyoutMenu::GetActiveMenu()->GetNavFrom() );
 	}
-	*/
-
 	BaseClass::OnMousePressed( code );
 }
 
@@ -319,9 +302,7 @@ void CBaseModFrame::OnOpen()
 #endif // _X360
 
 	// close active menu if there is one
-	/* ~FIX
 	FlyoutMenu::CloseActiveMenu();
-	*/
 
 	if ( ui_gameui_modal.GetBool() )
 	{
@@ -596,16 +577,6 @@ void CBaseModFrame::ApplySchemeSettings( IScheme *pScheme )
 			vgui::surface()->DrawSetTextureFile( m_nBottomBorderImageId, pBotImageName, true, false );	
 		}
 	}
-	
-	/*if( !m_nBlurImage.IsValid() )
-	{
-		IMaterial *pMaterial = materials->FindMaterial("vgui/blur", TEXTURE_GROUP_OTHER, false);
-		if (!IsErrorMaterial(pMaterial))
-		{
-			pMaterial->IncrementReferenceCount();
-			m_nBlurImage.Init(pMaterial);
-		}
-	}*/
 
 	m_smearColor = pScheme->GetColor( "Frame.SmearColor", Color( 0, 0, 0, 225 ) );
 
@@ -820,7 +791,19 @@ bool CBaseModFrame::CheckAndDisplayErrorIfNotLoggedIn()
 
 #ifndef _X360
 #ifndef SWDS
+	// if we have Steam interfaces and user is logged on, everything is OK
+	if ( steamapicontext && steamapicontext->SteamUser() && steamapicontext->SteamMatchmaking() )
+	{
+		/*
+		// Try starting to log on
+		if ( !steamapicontext->SteamUser()->BLoggedOn() )
+		{
+		steamapicontext->SteamUser()->LogOn();
+		}
+		*/
+
 		return false;
+	}
 	
 #endif
 #endif
@@ -830,8 +813,8 @@ bool CBaseModFrame::CheckAndDisplayErrorIfNotLoggedIn()
 	GenericConfirmation* confirmation = 
 		static_cast<GenericConfirmation*>( CBaseModPanel::GetSingleton().OpenWindow( WT_GENERICCONFIRMATION, CBaseModPanel::GetSingleton().GetWindow( WT_GAMELOBBY ), false ) );
 	GenericConfirmation::Data_t data;
-	data.pWindowTitle = "#L4D360UI_MsgBx_LoginRequired";
-	data.pMessageText = "#L4D360UI_MsgBx_SteamRequired";
+	data.pWindowTitle = "#GameUI_MsgBx_LoginRequired";
+	data.pMessageText = "#GameUI_MsgBx_SteamRequired";
 	data.bOkButtonEnabled = true;
 	confirmation->SetUsageData(data);
 
@@ -898,7 +881,7 @@ void CBaseModFrame::DrawGenericBackground()
 	vgui::surface()->DrawSetColor( Color( 0, 0, 0, 255 * flAlpha ) );
 	vgui::surface()->DrawFilledRect( 0, 0, GetWide(), GetTall() );
 
-	vgui::surface()->DrawSetColor( Color (BACKGROUND_CLR * flAlpha) );
+	vgui::surface()->DrawSetColor( Color( 53, 86, 117, 255 * flAlpha ) );
 	//vgui::surface()->DrawFilledRect( 0, YRES( 4 ), wide, tall - YRES( 4 ) );
 
 	int nBarPosY = YRES( 4 );
@@ -913,8 +896,7 @@ void CBaseModFrame::DrawGenericBackground()
 	// draw highlights
 	nBarHeight = YRES( 2 );
 	nBarPosY = 0;
-	//vgui::surface()->DrawSetColor( Color( 97, 210, 255, 255 * flAlpha ) );
-	vgui::surface()->DrawSetColor( Color( HIGHLIGHT_CLR * flAlpha ) );
+	vgui::surface()->DrawSetColor( Color( 97, 210, 255, 255 * flAlpha ) );
 	vgui::surface()->DrawFilledRectFade( iHalfWide, nBarPosY, wide, nBarPosY + nBarHeight, 255, 0, true );
 	vgui::surface()->DrawFilledRectFade( 0, nBarPosY, iHalfWide, nBarPosY + nBarHeight, 0, 255, true );
 
@@ -1040,7 +1022,7 @@ void CBaseModFrame::DrawDialogBackground( const char *pMajor, const wchar_t *pMa
 	// draw major title in header band
 	vgui::surface()->DrawSetTextFont( hTitleFont );
 	vgui::surface()->DrawSetTextPos( majorX, majorY );
-	vgui::surface()->DrawSetTextColor( TEXT_CLR );
+	vgui::surface()->DrawSetTextColor( 200, 200, 200, 255 );
 	vgui::surface()->DrawPrintText( szMajor, V_wcslen( szMajor ) );
 
 	if ( pMinorString )
@@ -1048,7 +1030,7 @@ void CBaseModFrame::DrawDialogBackground( const char *pMajor, const wchar_t *pMa
 		// draw minor title in header band
 		vgui::surface()->DrawSetTextFont( hDefaultFont );
 		vgui::surface()->DrawSetTextPos( minorX, minorY );
-		vgui::surface()->DrawSetTextColor( TEXT_CLR );
+		vgui::surface()->DrawSetTextColor( 200, 200, 200, 255 );
 		vgui::surface()->DrawPrintText( pMinorString, V_wcslen( pMinorString ) );
 	}
 
@@ -1103,19 +1085,6 @@ void CBaseModFrame::SetupAsDialogStyle()
 
 int CBaseModFrame::DrawSmearBackground( int x, int y, int wide, int tall, bool bIsFooter )
 {
-	//Draw blur before everything else
-	// was commented out
-	/*ITexture *pTexture = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
-
-	CMatRenderContextPtr pRenderContext(materials);
-
-	int realwide, realtall;
-	surface()->GetScreenSize(realwide, realtall);
-	pRenderContext->DrawScreenSpaceRectangle(m_nBlurImage, 0, 0, realwide, realtall,
-		0, 0, realwide, realtall,
-		pTexture->GetActualWidth(), pTexture->GetActualHeight());*/
-
-	
 	int topTall = scheme()->GetProportionalScaledValue( TOP_BORDER_HEIGHT );
 	int bottomTall = scheme()->GetProportionalScaledValue( BOTTOM_BORDER_HEIGHT );
 

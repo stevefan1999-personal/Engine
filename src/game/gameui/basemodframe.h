@@ -7,7 +7,6 @@
 #ifndef __BASEMODFRAME_H__
 #define __BASEMODFRAME_H__
 
-#include "cbase.h"
 #include "vgui_controls/Panel.h"
 #include "vgui_controls/Frame.h"
 #include "tier1/utllinkedlist.h"
@@ -160,7 +159,6 @@ namespace BaseModUI {
 
 		int m_nTopBorderImageId;
 		int m_nBottomBorderImageId;
-		//CMaterialReference m_nBlurImage;
 		Color m_smearColor;
 
 	protected:

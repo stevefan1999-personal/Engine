@@ -55,8 +55,6 @@ protected:
 	vgui::Panel			*m_pnlBackground;
 	vgui::DHANDLE<FlyoutMenu>			m_hCurrentFlyout;
 
-	vgui::HFont	m_hTextFont;
-
 	char m_curSelText[ MAX_PATH ];
 	bool m_SelectedTextEnabled;
 

@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VGenericPanelList.h"
 
 #include "vgui_controls/Label.h"
@@ -16,7 +15,7 @@
 #include "vgui/ILocalize.h"
 #include "vgui_controls/ImagePanel.h"
 #include "KeyValues.h"
-//#include "VFlyoutMenu.h"
+#include "VFlyoutMenu.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -496,7 +495,7 @@ void GenericPanelList::PerformLayout()
 	int x, y;
 	GetPos( x, y );
 
-	int nextItemY = 0, visibleCount = 0, nextItemX = 0;
+	int nextItemY = 0, visibleCount = 0;
 	int itemWide = GetWide() - ( m_PanelItemBorder * 2 );
 	
 #ifdef _X360
@@ -516,35 +515,19 @@ void GenericPanelList::PerformLayout()
 	}
 
 	int nTotalContentHeight = 0;
-	for( int i = 0, c = 0; i < m_PanelItems.Count(); ++i, c++ )
+	for( int i = 0; i < m_PanelItems.Count(); ++i )
 	{
-		m_PanelItems[i]->SetPos( nextItemX, nextItemY );
-	//_PanelItems[i]->SetWide( itemWide );
+		m_PanelItems[i]->SetPos( m_PanelItemBorder, nextItemY );
+		m_PanelItems[i]->SetWide( itemWide );
 
 		int itemX, itemY;
 		m_PanelItems[i]->GetPos( itemX, itemY );
 
-		if ( m_ItemSelectionModeMask == ISM_DIRECTIONAL )
-		{
-			nextItemX = itemX + m_PanelItems[i]->GetWide();
-			nextItemX += m_PanelItemBorder;
-			if ( c == 3 )
-			{
-				nTotalContentHeight += m_PanelItemBorder + m_PanelItems[i]->GetTall();
-				nextItemY = itemY + m_PanelItems[i]->GetTall();
-				nextItemX = 0;
-				nextItemY += m_PanelItemBorder;
-				c = 0;
-			}
-		}
-		else
-		{
-			nTotalContentHeight += m_PanelItemBorder + m_PanelItems[i]->GetTall();
-			nextItemY = itemY + m_PanelItems[i]->GetTall();
-
-			nextItemY += m_PanelItemBorder;
-		}
+		nTotalContentHeight += m_PanelItemBorder + m_PanelItems[i]->GetTall();
+		nextItemY = itemY + m_PanelItems[i]->GetTall();
 		++visibleCount;
+
+		nextItemY += m_PanelItemBorder;
 	}
 
 	m_ScrVerticalScroll->SetPos( GetWide( ) - m_ScrVerticalScroll->GetWide(), 0 );
@@ -610,7 +593,7 @@ void GenericPanelList::ApplySchemeSettings( IScheme *pScheme )
 		bgColor = GetSchemeColor( "GenericPanelList.BgColor", pScheme );
 	}
 
-	//SetBorder( pScheme->GetBorder( "GenericPanelListBorder" ) );
+	SetBorder( pScheme->GetBorder( "GenericPanelListBorder" ) );
 	SetBgColor( bgColor );
 
 	m_LblDownArrow->SetFont( pScheme->GetFont( "GameUIButtons" ) );
@@ -677,7 +660,7 @@ void GenericPanelList::UpdateArrows()
 	itoa( ( nLabelCount == 0 ) ? 0 : nLabelLast + 1, buffer, 10 );
 	V_UTF8ToUnicode( buffer, wLastInView, sizeof( wLastInView ) );
 
-	g_pVGuiLocalize->ConstructString( localizedScrollProgress, sizeof( localizedScrollProgress ), g_pVGuiLocalize->Find( "#L4D360UI_Scroll_Progress" ), 3, wFirstInView, wLastInView, wTotalAchievements );
+	g_pVGuiLocalize->ConstructString( localizedScrollProgress, sizeof( localizedScrollProgress ), g_pVGuiLocalize->Find( "#GameUI_Scroll_Progress" ), 3, wFirstInView, wLastInView, wTotalAchievements );
 	m_LblScrollProgress->SetText( localizedScrollProgress );
 }
 

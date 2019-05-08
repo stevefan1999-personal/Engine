@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VGameOptions.h"
 #include "VSpinnerControl.h"
 #include "VFooterPanel.h"
@@ -18,33 +17,33 @@ using namespace vgui;
 using namespace BaseModUI;
 
 GenericSpinnerItem gInvertYAxisItems[] = {
-	{ "#L4D360UI_DisabledDefault",		"",		0 },
-	{ "#L4D360UI_Enabled",				"",		1 },
+	{ "#GameUI_DisabledDefault",		"",		0 },
+	{ "#GameUI_Enabled",				"",		1 },
 };
 #define INVERT_YAXIS_DEFAULT 0
 
 GenericSpinnerItem gVibrationItems[] = {
-	{ "#L4D360UI_ControllerVibration0",	"",		0 },
-	{ "#L4D360UI_ControllerVibration1",	"",		1 },
-	{ "#L4D360UI_ControllerVibration2",	"",		2 },
-	{ "#L4D360UI_ControllerVibration3",	"",		3 },
-	{ "#L4D360UI_ControllerVibration4",	"",		4 },
-	{ "#L4D360UI_ControllerVibration5",	"",		5 },
+	{ "#GameUI_ControllerVibration0",	"",		0 },
+	{ "#GameUI_ControllerVibration1",	"",		1 },
+	{ "#GameUI_ControllerVibration2",	"",		2 },
+	{ "#GameUI_ControllerVibration3",	"",		3 },
+	{ "#GameUI_ControllerVibration4",	"",		4 },
+	{ "#GameUI_ControllerVibration5",	"",		5 },
 };
 #define VIBRATION_DEFAULT 5
 
 GenericSpinnerItem gAutoCrouchItems[] = {
-	{ "#L4D360UI_Disabled",				"",		0 },
-	{ "#L4D360UI_EnabledDefault",		"",		1 },
+	{ "#GameUI_Disabled",				"",		0 },
+	{ "#GameUI_EnabledDefault",		"",		1 },
 };
 #define SWAP_AUTOCROUCH_DEFAULT 0
 
 GenericSpinnerItem gLookSensitivityItems[] = {
-	{ "#L4D360UI_LookSensitivity1",		"",		1 },
-	{ "#L4D360UI_LookSensitivity2",		"",		2 },
-	{ "#L4D360UI_LookSensitivity3",		"",		3 },
-	{ "#L4D360UI_LookSensitivity4",		"",		4 },
-	{ "#L4D360UI_LookSensitivity5",		"",		5 },
+	{ "#GameUI_LookSensitivity1",		"",		1 },
+	{ "#GameUI_LookSensitivity2",		"",		2 },
+	{ "#GameUI_LookSensitivity3",		"",		3 },
+	{ "#GameUI_LookSensitivity4",		"",		4 },
+	{ "#GameUI_LookSensitivity5",		"",		5 },
 };
 #define LOOK_SENSITIVITY_MIN 1
 #define LOOK_SENSITIVITY_MAX 5
@@ -74,7 +73,7 @@ BaseClass(parent, panelName, true, true)
 {
 	SetDeleteSelfOnClose(true);
 	SetProportional( true );
-	SetTitle( "#L4D360UI_GameOptions", false );
+	SetTitle( "#GameUI_GameOptions", false );
 
 	int i  = 0;
 
@@ -101,8 +100,8 @@ BaseClass(parent, panelName, true, true)
 	if ( footer )
 	{
 		footer->SetButtons( FB_ABUTTON | FB_BBUTTON, FF_AB_ONLY, true );
-		footer->SetButtonText( FB_ABUTTON, "#L4D360UI_Select" );
-		footer->SetButtonText( FB_BBUTTON, "#L4D360UI_Cancel" );
+		footer->SetButtonText( FB_ABUTTON, "#GameUI_Select" );
+		footer->SetButtonText( FB_BBUTTON, "#GameUI_Cancel" );
 	}
 
 	m_ActiveControl = m_SpnInvertYAxis;

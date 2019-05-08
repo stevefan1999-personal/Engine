@@ -561,31 +561,19 @@ bool CEngineVGui::SetVGUIDirectories()
 //-----------------------------------------------------------------------------
 void CEngineVGui::Init()
 {
-	// load the GameUI dll
-	const char *szDllName = "gameui";
-
-	if ( CommandLine()->FindParm( "-gameui" ) )
-	{
-		COM_TimestampedLog( "Loading Mod gameui.dll" );
-		m_hStaticGameUIModule = g_pFileSystem->LoadModule( szDllName, "GAMEBIN", true ); // LoadModule() does a GetLocalCopy() call
-	}
-	else
-	{
-		COM_TimestampedLog( "Loading gameui.dll" );
-		m_hStaticGameUIModule = g_pFileSystem->LoadModule( szDllName, "EXECUTABLE_PATH", true ); // LoadModule() does a GetLocalCopy() call
-	}
+	m_hStaticGameUIModule = g_pFileSystem->LoadModule( "gameui", "GAMEBIN", true ); // LoadModule() does a GetLocalCopy() call
 
 	m_GameUIFactory = Sys_GetFactory(m_hStaticGameUIModule);
 	if ( !m_GameUIFactory )
 	{
-		Error( "Could not load: %s\n", szDllName );
+		Error( "Could not load: gameui%s\n", DLL_EXT_STRING );
 	}
 	
 	// get the initialization func
 	staticGameUIFuncs = (IGameUI *)m_GameUIFactory(GAMEUI_INTERFACE_VERSION, NULL);
 	if (!staticGameUIFuncs )
 	{
-		Error( "Could not get IGameUI interface %s from %s\n", GAMEUI_INTERFACE_VERSION, szDllName );
+		Error( "Could not get IGameUI interface %s from gameui%s\n", GAMEUI_INTERFACE_VERSION, DLL_EXT_STRING );
 	}
 
 	if ( IsPC() )
@@ -593,7 +581,7 @@ void CEngineVGui::Init()
 		staticGameConsole = (IGameConsole *)m_GameUIFactory(GAMECONSOLE_INTERFACE_VERSION, NULL);
 		if ( !staticGameConsole )
 		{
-			Sys_Error( "Could not get IGameConsole interface %s from %s\n", GAMECONSOLE_INTERFACE_VERSION, szDllName );
+			Sys_Error( "Could not get IGameConsole interface %s from gameui%s\n", GAMECONSOLE_INTERFACE_VERSION, DLL_EXT_STRING );
 		}
 	}
 

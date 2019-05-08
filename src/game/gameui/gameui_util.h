@@ -12,6 +12,10 @@
 
 char	*VarArgs( const char *format, ... );
 
+// Set by the player who "owns" the gameui/settings/etc.
+void SetGameUIActiveSplitScreenPlayerSlot( int nSlot );
+int GetGameUIActiveSplitScreenPlayerSlot();
+
 #include "tier1/convar.h"
 
 void GameUI_MakeSafeName( const char *oldName, char *newName, int newNameBufSize );
@@ -46,25 +50,45 @@ public:
 
 	const char *GetDefault() const;
 
+	const char *GetBaseName() const;
+
+protected:
+	int		GetActiveSplitScreenPlayerSlot() const;
 private:
-	IConVar * m_pConVar;
-	ConVar *m_pConVarState;
+	struct cv_t
+	{
+		IConVar *m_pConVar;
+		ConVar *m_pConVarState;
+	};
+
+	cv_t	m_Info[ MAX_SPLITSCREEN_CLIENTS ];
 };
 
 // In GAMUI we should never use the regular ConVarRef
 #define ConVarRef CGameUIConVarRef
+
+FORCEINLINE int CGameUIConVarRef::GetActiveSplitScreenPlayerSlot() const
+{
+	return GetGameUIActiveSplitScreenPlayerSlot();
+}
 
 //-----------------------------------------------------------------------------
 // Did we find an existing convar of that name?
 //-----------------------------------------------------------------------------
 FORCEINLINE bool CGameUIConVarRef::IsFlagSet( int nFlags ) const
 {
-	return ( m_pConVar->IsFlagSet( nFlags ) != 0 );
+	return ( m_Info[ 0 ].m_pConVar->IsFlagSet( nFlags ) != 0 );
 }
 
 FORCEINLINE const char *CGameUIConVarRef::GetName() const
 {
-	return m_pConVar->GetName();
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	return m_Info[ nSlot ].m_pConVar->GetName();
+}
+
+FORCEINLINE const char *CGameUIConVarRef::GetBaseName() const
+{
+	return m_Info[ 0 ].m_pConVar->GetBaseName();
 }
 
 //-----------------------------------------------------------------------------
@@ -72,7 +96,8 @@ FORCEINLINE const char *CGameUIConVarRef::GetName() const
 //-----------------------------------------------------------------------------
 FORCEINLINE float CGameUIConVarRef::GetFloat() const
 {
-	return m_pConVarState->GetFloat();
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	return m_Info[ nSlot ].m_pConVarState->GetRawValue().m_fValue;
 }
 
 //-----------------------------------------------------------------------------
@@ -80,7 +105,8 @@ FORCEINLINE float CGameUIConVarRef::GetFloat() const
 //-----------------------------------------------------------------------------
 FORCEINLINE int CGameUIConVarRef::GetInt() const 
 {
-	return m_pConVarState->GetInt();
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	return m_Info[ nSlot ].m_pConVarState->GetRawValue().m_nValue;
 }
 
 //-----------------------------------------------------------------------------
@@ -89,33 +115,51 @@ FORCEINLINE int CGameUIConVarRef::GetInt() const
 FORCEINLINE const char *CGameUIConVarRef::GetString() const 
 {
 	Assert( !IsFlagSet( FCVAR_NEVER_AS_STRING ) );
-	return m_pConVarState->GetString();
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	return m_Info[ nSlot ].m_pConVarState->GetRawValue().m_pszString;
 }
 
 
 FORCEINLINE void CGameUIConVarRef::SetValue( const char *pValue )
 {
-	m_pConVar->SetValue( pValue );
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	m_Info[ nSlot ].m_pConVar->SetValue( pValue );
 }
 
 FORCEINLINE void CGameUIConVarRef::SetValue( float flValue )
 {
-	m_pConVar->SetValue( flValue );
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	m_Info[ nSlot ].m_pConVar->SetValue( flValue );
 }
 
 FORCEINLINE void CGameUIConVarRef::SetValue( int nValue )
 {
-	m_pConVar->SetValue( nValue );
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	m_Info[ nSlot ].m_pConVar->SetValue( nValue );
 }
 
 FORCEINLINE void CGameUIConVarRef::SetValue( bool bValue )
 {
-	m_pConVar->SetValue( bValue ? 1 : 0 );
+	int nSlot = GetActiveSplitScreenPlayerSlot();
+	m_Info[ nSlot ].m_pConVar->SetValue( bValue ? 1 : 0 );
 }
 
 FORCEINLINE const char *CGameUIConVarRef::GetDefault() const
 {
-	return m_pConVarState->GetDefault();
+	return m_Info[ 0 ].m_pConVarState->GetDefault();
 }
+
+//-----------------------------------------------------------------------------
+
+class CGameUiSetActiveSplitScreenPlayerGuard
+{
+public:
+	explicit CGameUiSetActiveSplitScreenPlayerGuard( int slot );
+	~CGameUiSetActiveSplitScreenPlayerGuard();
+private:
+	int	 m_nSaveSlot;
+};
+
+#define GAMEUI_ACTIVE_SPLITSCREEN_PLAYER_GUARD( slot )	CGameUiSetActiveSplitScreenPlayerGuard g_SSGuard( slot );
 
 #endif // GAMEUI_UTIL_H

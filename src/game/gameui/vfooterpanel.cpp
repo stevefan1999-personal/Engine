@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VFooterPanel.h"
 #include "vgui/IPanel.h"
 #include "vgui_controls/ImagePanel.h"

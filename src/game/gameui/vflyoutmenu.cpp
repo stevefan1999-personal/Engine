@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VFlyoutMenu.h"
 #include "VGenericPanelList.h"
 #include "VFooterPanel.h"
@@ -43,8 +42,8 @@ FlyoutMenu::FlyoutMenu( vgui::Panel *parent, const char* panelName )
 {
 	SetProportional( true );
 
-	//m_offsetX = 0;
-	//m_offsetY = 0;
+	m_offsetX = 0;
+	m_offsetY = 0;
 	m_navFrom = NULL;
 	m_lastChildNotified = NULL;
 	m_listener = NULL;
@@ -69,8 +68,8 @@ FlyoutMenu::~FlyoutMenu()
 
 void FlyoutMenu::PaintBackground()
 {
-	//vgui::IScheme *pScheme = vgui::scheme()->GetIScheme( GetScheme() );
-	//Color borderColor = pScheme->GetColor( "HybridButton.BorderColor", Color( 0, 0, 0, 255 ) );
+	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme( GetScheme() );
+	Color borderColor = pScheme->GetColor( "HybridButton.BorderColor", Color( 0, 0, 0, 255 ) );
 
 	int wide, tall;
 	GetSize( wide, tall );
@@ -88,23 +87,23 @@ void FlyoutMenu::PaintBackground()
 		fadePoint = 245;
 	}
 
-	//surface()->DrawSetColor( Color( 0, 0, 0, 255 ) );
-	//surface()->DrawFilledRect( 0, 0, iHalfWide, tall );
-	//surface()->DrawFilledRectFade( iHalfWide, 0, iHalfWide + iFourthWide, tall, 255, fadePoint, true );
-	//surface()->DrawFilledRectFade( iHalfWide + iFourthWide, 0, wide, tall, fadePoint, 0, true );
+	surface()->DrawSetColor( Color( 0, 0, 0, 255 ) );
+	surface()->DrawFilledRect( 0, 0, iHalfWide, tall );
+	surface()->DrawFilledRectFade( iHalfWide, 0, iHalfWide + iFourthWide, tall, 255, fadePoint, true );
+	surface()->DrawFilledRectFade( iHalfWide + iFourthWide, 0, wide, tall, fadePoint, 0, true );
 
 	// draw border lines
-	//surface()->DrawSetColor( borderColor );
-	//surface()->DrawFilledRectFade( 0, 0, wide, 2, 255, 0, true );
-	//surface()->DrawFilledRectFade( 0, tall-2, wide, tall, 255, 0, true );
+	surface()->DrawSetColor( borderColor );
+	surface()->DrawFilledRectFade( 0, 0, wide, 2, 255, 0, true );
+	surface()->DrawFilledRectFade( 0, tall-2, wide, tall, 255, 0, true );
 
 	if ( m_bExpandUp )
 	{
-		//surface()->DrawFilledRect( 0, 0, 2, tall-m_FromOriginalTall+2 );
+		surface()->DrawFilledRect( 0, 0, 2, tall-m_FromOriginalTall+2 );
 	}
 	else
 	{
-		//surface()->DrawFilledRect( 0, m_FromOriginalTall-2, 2, tall );
+		surface()->DrawFilledRect( 0, m_FromOriginalTall-2, 2, tall );
 	}
 }
 
@@ -121,14 +120,14 @@ void FlyoutMenu::SetInitialSelection( const char *szInitialSelection )
 	}
 }
 
-/*void FlyoutMenu::SetBGTall( int iTall )
+void FlyoutMenu::SetBGTall( int iTall )
 {
 	Panel *bgPanel = FindChildByName( "PnlBackground" );
 	if ( bgPanel )
 	{
 		bgPanel->SetTall( vgui::scheme()->GetProportionalScaledValue( iTall ) );
 	}
-}*/
+}
 
 void FlyoutMenu::OpenMenu( vgui::Panel * flyFrom, vgui::Panel* initialSelection, bool reloadRes )
 {
@@ -177,11 +176,7 @@ void FlyoutMenu::OpenMenu( vgui::Panel * flyFrom, vgui::Panel* initialSelection,
 			}
 			if ( button->GetStyle() == BaseModHybridButton::BUTTON_DROPDOWN || button->GetStyle() == BaseModHybridButton::BUTTON_GAMEMODE )
 			{
-				//int wideAtOpen = button->GetWideAtOpen();
-				// workaround for wideatopen not being able to use size variabls
-				int wideAtOpen = ( button->GetWide() - button->GetWideAtOpen() );
-				//int wideAtOpen = ( button->GetWide() - button->GetWideAtOpen() + 1.125 ); // 1920x1080
-				//int wideAtOpen = ( button->GetWide() - button->GetWideAtOpen() + ( vgui::scheme()->GetProportionalScaledValue( 1 ) / 2 ) );
+				int wideAtOpen = button->GetWideAtOpen();
 				if ( wideAtOpen )
 				{
 					wide = wideAtOpen;
@@ -233,8 +228,8 @@ void FlyoutMenu::OpenMenu( vgui::Panel * flyFrom, vgui::Panel* initialSelection,
 		}
 
 		footer->SetButtons( FB_ABUTTON | FB_BBUTTON, format, footer->GetHelpTextEnabled() );
-		footer->SetButtonText( FB_ABUTTON, "#L4D360UI_Select" );
-		footer->SetButtonText( FB_BBUTTON, "#L4D360UI_Cancel" );
+		footer->SetButtonText( FB_ABUTTON, "#GameUI_Select" );
+		footer->SetButtonText( FB_BBUTTON, "#GameUI_Cancel" );
 	}
 
 	// keep track of what menu is open
@@ -286,9 +281,9 @@ void FlyoutMenu::ApplySettings( KeyValues* inResourceData )
 	}
 
 	// cannot support arbitrary offsets with new look
-	// well screw that
-	//m_offsetX = 0;
-	//m_offsetY = 0;
+	//
+	m_offsetX = 0;
+	m_offsetY = 0;
 
 	const char* initFocus = inResourceData->GetString( "InitialFocus", NULL );
 
@@ -315,9 +310,8 @@ void FlyoutMenu::ApplySchemeSettings( vgui::IScheme* pScheme )
 		vgui::Panel* bgPanel = FindChildByName( "PnlBackground" );
 		if ( bgPanel )
 		{
-			//bgPanel->SetBgColor( pScheme->GetColor( "Flyout.BgColor" , Color( 0, 0, 0, 255 ) ) );
-			bgPanel->SetBgColor( pScheme->GetColor( "FlyoutMenuButton.BgColor" , Color( 64, 64, 64, 128 ) ) );
-			bgPanel->SetBorder( pScheme->GetBorder( "FlyoutMenuBorder" ) );
+//			bgPanel->SetBgColor( pScheme->GetColor( "Flyout.BgColor" , Color( 0, 0, 0, 255 ) ) );
+//			bgPanel->SetBorder( pScheme->GetBorder( "FlyoutBorder" ) );
 
 			// just use the PnlBackground to set size, not needed for anything else
 			int wide, tall;
@@ -344,8 +338,12 @@ void FlyoutMenu::ApplySchemeSettings( vgui::IScheme* pScheme )
 					}
 				}
 			}
+
+			bgPanel->SetVisible( false );
 		}
 	}
+
+	SetPaintBackgroundEnabled( true );
 }
 
 // Load the control settings 
@@ -558,14 +556,12 @@ void FlyoutMenu::OnKeyCodePressed( vgui::KeyCode code )
 		}
 		break;
 
-		/*
 	case KEY_XBUTTON_INACTIVE_START:
 		if ( CBaseModFrame *pPanel = dynamic_cast< CBaseModFrame * >( m_listener ) )
 		{
 			pPanel->OnKeyCodePressed( code );
 		}
 		break;
-		*/
 
 	default:
 		//BaseClass::OnKeyCodePressed( code );

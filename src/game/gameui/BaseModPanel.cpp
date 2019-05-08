@@ -1,3 +1,9 @@
+//========= Copyright  1996-2008, Valve Corporation, All rights reserved. ============//
+//
+// Purpose: 
+//
+//=====================================================================================//
+
 #include "cbase.h"
 #include "basemodpanel.h"
 #include "./GameUI/IGameUI.h"
@@ -12,53 +18,45 @@
 #include "inputsystem/iinputsystem.h"
 #include "FileSystem.h"
 #include "tier2/renderutils.h"
-// #include "vgui_video_player.h"
+
+#ifdef _X360
+	#include "xbox/xbox_launch.h"
+#endif
 
 // BaseModUI High-level windows
 #include "VTransitionScreen.h"
-//#include "VAchievements.h"
-#include "vaddonassociation.h"
-#include "VAddons.h"
+#include "VAchievements.h"
 #include "VAttractScreen.h"
-#include "shared/settings/vaudio.h"
-#include "shared/settings/vaudiovideo.h"
-//#include "VCloud.h"
-//#include "VControllerOptions.h"
-//#include "VControllerOptionsButtons.h"
-//#include "VControllerOptionsSticks.h"
-//#include "VDownloads.h"
-//#include "VFoundGames.h"
-#include "VFlyoutMenu.h"
-//#include "VFoundGroupGames.h"
-//#include "vfoundpublicgames.h"
-//#include "VGameLobby.h"
-//#include "VGameOptions.h"
-//#include "VGameSettings.h"
+#include "VAudio.h"
+#include "VAudioVideo.h"
+#include "VCloud.h"
+#include "VControllerOptions.h"
+#include "VControllerOptionsButtons.h"
+#include "VControllerOptionsSticks.h"
+#include "VGameOptions.h"
+#include "VGameSettings.h"
 #include "VGenericConfirmation.h"
-//#include "VGenericWaitScreen.h"
-//#include "vgetlegacydata.h"
-//#include "VInGameDifficultySelect.h"
+#include "VGenericWaitScreen.h"
+#include "vgetlegacydata.h"
+#include "VInGameDifficultySelect.h"
 #include "VInGameMainMenu.h"
-//#include "VInGameChapterSelect.h"
-//#include "VInGameKickPlayerList.h"
-#include "shared/settings/vkeyboardmouse.h"
-#include "shared/settings/vkeyboard.h"
-//#include "VVoteOptions.h"
+#include "VInGameChapterSelect.h"
+#include "VInGameKickPlayerList.h"
+#include "VKeyboardMouse.h"
+#include "vkeyboard.h"
+#include "VVoteOptions.h"
 #include "VLoadingProgress.h"
 #include "VMainMenu.h"
-//#include "VMultiplayer.h"
-#include "shared/settings/voptions.h"
-//#include "VSignInDialog.h"
+#include "VMultiplayer.h"
+#include "VOptions.h"
+#include "VSignInDialog.h"
 #include "VFooterPanel.h"
-//#include "VPasswordEntry.h"
-#include "shared/settings/vvideo.h"
-//#include "VSteamCloudConfirmation.h"
-#include "vcustomcampaigns.h"
-//#include "vdownloadcampaign.h"
-//#include "vjukebox.h"
-//#include "vleaderboard.h"
+#include "VPasswordEntry.h"
+#include "VVideo.h"
+#include "VSteamCloudConfirmation.h"
+#include "vjukebox.h"
+#include "vleaderboard.h"
 #include "gameconsole.h"
-
 #include "vgui/ISystem.h"
 #include "vgui/ISurface.h"
 #include "vgui/ILocalize.h"
@@ -70,33 +68,7 @@
 #include "tier0/icommandline.h"
 #include "fmtstr.h"
 #include "smartptr.h"
-//#include "nb_header_footer.h"
-#include "vgui_controls/ControllerMap.h"
-#include "ModInfo.h"
-#include "vgui_controls/AnimationController.h"
-#include "vgui_controls/ImagePanel.h"
-#include "vgui_controls/Label.h"
-#include "vgui_controls/Menu.h"
-#include "vgui_controls/MenuItem.h"
-#include "vgui_controls/PHandle.h"
-#include "vgui_controls/MessageBox.h"
-#include "vgui_controls/QueryBox.h"
-#include "vgui_controls/ControllerMap.h"
-#include "vgui_controls/KeyRepeat.h"
-#include "vgui/iinput.h"
-#include "vgui/ivgui.h"
-#include "NewGameDialog.h"
-#include "BonusMapsDialog.h"
-#include "LoadGameDialog.h"
-#include "SaveGameDialog.h"
-#include "shared/settings_old/optionsdialog.h"
-//#include "settings/voptionsmenu.h"
-
-// UI defines. Include if you want to implement some of them [str]
-// gotta have a better way to select this
-// idk why, but preprocessor defs arnt being added so I can't select this
-// im probably an idiot
-#include "maplab\ui_defines.h"
+#include "nb_header_footer.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -107,405 +79,84 @@ using namespace vgui;
 //setup in GameUI_Interface.cpp
 extern class IMatchSystem *matchsystem;
 extern const char *COM_GetModDirectory( void );
-extern class IGameConsole *IGameConsole();
-static CBaseModPanel	*g_pBasePanel = NULL;
-
-extern ISoundEmitterSystemBase *soundemitterbase;
-
-bool g_bIsCreatingNewGameMenuForPreFetching = false;
+extern IGameConsole *IGameConsole();
 
 //=============================================================================
 CBaseModPanel* CBaseModPanel::m_CFactoryBasePanel = 0;
 
-//-----------------------------------------------------------------------------
-// Purpose: singleton accessor
-//-----------------------------------------------------------------------------
-CBaseModPanel *BaseModUI::BasePanel()
-{
-	return g_pBasePanel;
-}
-
 #ifndef _CERT
-
-ConVar ui_gameui_debug( "ui_gameui_debug", "0" );
-
+#ifdef _X360
+ConVar ui_gameui_debug( "ui_gameui_debug", "1" );
+#else
+ConVar ui_gameui_debug( "ui_gameui_debug", "0", FCVAR_RELEASE );
+#endif
 int UI_IsDebug()
 {
 	return (*(int *)(&ui_gameui_debug)) ? ui_gameui_debug.GetInt() : 0;
 }
 #endif
 
+#if defined( _X360 )
+static void InstallStatusChanged( IConVar *pConVar, const char *pOldValue, float flOldValue )
+{
+	// spew out status
+	if ( ((ConVar *)pConVar)->GetBool() && g_pXboxInstaller )
+	{
+		g_pXboxInstaller->SpewStatus();
+	}
+}
+ConVar xbox_install_status( "xbox_install_status", "0", 0, "Show install status", InstallStatusChanged );
+#endif
 
 // Use for show demos to force the correct campaign poster
 ConVar demo_campaign_name( "demo_campaign_name", "L4D2C5", FCVAR_DEVELOPMENTONLY, "Short name of campaign (i.e. L4D2C5), used to show correct poster in demo mode." );
 
 ConVar ui_lobby_noresults_create_msg_time( "ui_lobby_noresults_create_msg_time", "2.5", FCVAR_DEVELOPMENTONLY );
 
-
-
-CGameMenuItem::CGameMenuItem(vgui::Menu *parent, const char *name)  : BaseClass(parent, name, "GameMenuItem") 
-{
-	m_bRightAligned = false;
-}
-
-void CGameMenuItem::ApplySchemeSettings(IScheme *pScheme)
-{
-	BaseClass::ApplySchemeSettings(pScheme);
-
-	// make fully transparent
-	SetFgColor(GetSchemeColor("MainMenu.TextColor", pScheme));
-	SetBgColor(Color(0, 0, 0, 0));
-	SetDefaultColor(GetSchemeColor("MainMenu.TextColor", pScheme), Color(0, 0, 0, 0));
-	SetArmedColor(GetSchemeColor("MainMenu.ArmedTextColor", pScheme), Color(0, 0, 0, 0));
-	SetDepressedColor(GetSchemeColor("MainMenu.DepressedTextColor", pScheme), Color(0, 0, 0, 0));
-	SetContentAlignment(Label::a_west);
-	SetBorder(NULL);
-	SetDefaultBorder(NULL);
-	SetDepressedBorder(NULL);
-	SetKeyFocusBorder(NULL);
-
-	vgui::HFont hMainMenuFont = pScheme->GetFont( "MainMenuFont", IsProportional() );
-
-	if ( hMainMenuFont )
-	{
-		SetFont( hMainMenuFont );
-	}
-	else
-	{
-		SetFont( pScheme->GetFont( "MenuLarge", IsProportional() ) );
-	}
-	SetTextInset(0, 0);
-	SetArmedSound("UI/buttonrollover.wav");
-	SetDepressedSound("UI/buttonclick.wav");
-	SetReleasedSound("UI/buttonclickrelease.wav");
-	SetButtonActivationType(Button::ACTIVATE_ONPRESSED);
-
-	if (m_bRightAligned)
-	{
-		SetContentAlignment(Label::a_east);
-	}
-}
-
-void CGameMenuItem::PaintBackground()
-{
-	if ( !GameUI().IsConsoleUI() )
-	{
-		BaseClass::PaintBackground();
-	}
-	else
-	{
-		if ( !IsArmed() || !IsVisible() || GetParent()->GetAlpha() < 32 )
-			return;
-
-		int wide, tall;
-		GetSize( wide, tall );
-
-		DrawBoxFade( 0, 0, wide, tall, GetButtonBgColor(), 1.0f, 255, 0, true );
-		DrawBoxFade( 2, 2, wide - 4, tall - 4, Color( 0, 0, 0, 96 ), 1.0f, 255, 0, true );
-	}
-}
-
-void CGameMenuItem::SetRightAlignedText(bool state)
-{
-	m_bRightAligned = state;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: General purpose 1 of N menu
-//-----------------------------------------------------------------------------
-class CGameMenu : public vgui::Menu
-{
-	DECLARE_CLASS_SIMPLE( CGameMenu, vgui::Menu );
-
-public:
-	CGameMenu(vgui::Panel *parent, const char *name) : BaseClass(parent, name) 
-	{
-		if ( GameUI().IsConsoleUI() )
-		{
-			// shows graphic button hints
-			m_pConsoleFooter = new CFooterPanel( parent, "MainMenuFooter" );
-
-			int iFixedWidth = 245;
-
-			SetFixedWidth( iFixedWidth );
-		}
-		else
-		{
-			m_pConsoleFooter = NULL;
-		}
-	}
-
-	virtual void ApplySchemeSettings(IScheme *pScheme)
-	{
-		BaseClass::ApplySchemeSettings(pScheme);
-
-		// make fully transparent
-		SetMenuItemHeight(atoi(pScheme->GetResourceString("MainMenu.MenuItemHeight")));
-		SetBgColor(Color(0, 0, 0, 0));
-		SetBorder(NULL);
-	}
-
-	virtual void LayoutMenuBorder()
-	{
-	}
-
-	virtual void SetVisible(bool state)
-	{
-		// force to be always visible
-		BaseClass::SetVisible(true);
-		// move us to the back instead of going invisible
-		if (!state)
-		{
-			ipanel()->MoveToBack(GetVPanel());
-		}
-	}
-
-	virtual int AddMenuItem(const char *itemName, const char *itemText, const char *command, Panel *target, KeyValues *userData = NULL)
-	{
-		MenuItem *item = new CGameMenuItem(this, itemName);
-		item->AddActionSignalTarget(target);
-		item->SetCommand(command);
-		item->SetText(itemText);
-		item->SetUserData(userData);
-		return BaseClass::AddMenuItem(item);
-	}
-
-	virtual int AddMenuItem(const char *itemName, const char *itemText, KeyValues *command, Panel *target, KeyValues *userData = NULL)
-	{
-		CGameMenuItem *item = new CGameMenuItem(this, itemName);
-		item->AddActionSignalTarget(target);
-		item->SetCommand(command);
-		item->SetText(itemText);
-		item->SetRightAlignedText(true);
-		item->SetUserData(userData);
-		return BaseClass::AddMenuItem(item);
-	}
-
-	virtual void SetMenuItemBlinkingState( const char *itemName, bool state )
-	{
-		for (int i = 0; i < GetChildCount(); i++)
-		{
-			Panel *child = GetChild(i);
-			MenuItem *menuItem = dynamic_cast<MenuItem *>(child);
-			if (menuItem)
-			{
-				if ( Q_strcmp( menuItem->GetCommand()->GetString("command", ""), itemName ) == 0 )
-				{
-					menuItem->SetBlink( state );
-				}
-			}
-		}
-		InvalidateLayout();
-	}
-
-	virtual void OnCommand(const char *command)
-	{
-		m_KeyRepeat.Reset();
-
-		if (!stricmp(command, "Open"))
-		{
-			MoveToFront();
-			RequestFocus();
-		}
-		else
-		{
-			BaseClass::OnCommand(command);
-		}
-	}
-
-	virtual void OnKeyCodePressed( KeyCode code )
-	{
-		if ( IsX360() )
-		{
-			if ( GetAlpha() != 255 )
-			{
-				SetEnabled( false );
-				// inhibit key activity during transitions
-				return;
-			}
-
-			SetEnabled( true );
-
-			if ( code == KEY_XBUTTON_B || code == KEY_XBUTTON_START )
-			{
-				if ( GameUI().IsInLevel() )
-				{
-					GetParent()->OnCommand( "ResumeGame" );
-				}
-				return;
-			}
-		}
-
-		m_KeyRepeat.KeyDown( code );
-
-		BaseClass::OnKeyCodePressed( code );
-
-		// HACK: Allow F key bindings to operate even here
-		if ( IsPC() && code >= KEY_F1 && code <= KEY_F12 )
-		{
-			// See if there is a binding for the FKey
-			const char *binding = gameuifuncs->GetBindingForButtonCode( code );
-			if ( binding && binding[0] )
-			{
-				// submit the entry as a console commmand
-				char szCommand[256];
-				Q_strncpy( szCommand, binding, sizeof( szCommand ) );
-				engine->ClientCmd_Unrestricted( szCommand );
-			}
-		}
-	}
-
-	void OnKeyCodeReleased( vgui::KeyCode code )
-	{
-		m_KeyRepeat.KeyUp( code );
-
-		BaseClass::OnKeyCodeReleased( code );
-	}
-
-	void OnThink()
-	{
-		vgui::KeyCode code = m_KeyRepeat.KeyRepeated();
-		if ( code )
-		{
-			OnKeyCodeTyped( code );
-		}
-
-		BaseClass::OnThink();
-	}
-
-	virtual void OnKillFocus()
-	{
-		BaseClass::OnKillFocus();
-
-		// force us to the rear when we lose focus (so it looks like the menu is always on the background)
-		surface()->MovePopupToBack(GetVPanel());
-
-		m_KeyRepeat.Reset();
-	}
-
-	void ShowFooter( bool bShow )
-	{
-		if ( m_pConsoleFooter )
-		{
-			m_pConsoleFooter->SetVisible( bShow );
-		}
-	}
-
-	void UpdateMenuItemState( bool isInGame, bool isMultiplayer )
-	{
-		bool isSteam = IsPC() && ( CommandLine()->FindParm("-steam") != 0 );
-		bool bIsConsoleUI = GameUI().IsConsoleUI();
-
-		// disabled save button if we're not in a game
-		for (int i = 0; i < GetChildCount(); i++)
-		{
-			Panel *child = GetChild(i);
-			MenuItem *menuItem = dynamic_cast<MenuItem *>(child);
-			if (menuItem)
-			{
-				bool shouldBeVisible = true;
-				// filter the visibility
-				KeyValues *kv = menuItem->GetUserData();
-				if (!kv)
-					continue;
-
-				if (!isInGame && kv->GetInt("OnlyInGame") )
-				{
-					shouldBeVisible = false;
-				}
-				else if (isMultiplayer && kv->GetInt("notmulti"))
-				{
-					shouldBeVisible = false;
-				}
-				else if (isInGame && !isMultiplayer && kv->GetInt("notsingle"))
-				{
-					shouldBeVisible = false;
-				}
-				else if (isSteam && kv->GetInt("notsteam"))
-				{
-					shouldBeVisible = false;
-				}
-				else if ( !bIsConsoleUI && kv->GetInt( "ConsoleOnly" ) )
-				{
-					shouldBeVisible = false;
-				}
-
-				menuItem->SetVisible( shouldBeVisible );
-			}
-		}
-
-		if ( !isInGame )
-		{
-			// Sort them into their original order
-			for ( int j = 0; j < GetChildCount() - 2; j++ )
-			{
-				MoveMenuItem( j, j + 1 );
-			}
-		}
-		else
-		{
-			// Sort them into their in game order
-			for ( int i = 0; i < GetChildCount(); i++ )
-			{
-				for ( int j = i; j < GetChildCount() - 2; j++ )
-				{
-					int iID1 = GetMenuID( j );
-					int iID2 = GetMenuID( j + 1 );
-
-					MenuItem *menuItem1 = GetMenuItem( iID1 );
-					MenuItem *menuItem2 = GetMenuItem( iID2 );
-
-					KeyValues *kv1 = menuItem1->GetUserData();
-					KeyValues *kv2 = menuItem2->GetUserData();
-
-					if ( kv1->GetInt("InGameOrder") > kv2->GetInt("InGameOrder") )
-						MoveMenuItem( iID2, iID1 );
-				}
-			}
-		}
-
-		InvalidateLayout();
-
-		if ( m_pConsoleFooter )
-		{
-			// update the console footer
-			const char *pHelpName;
-			if ( !isInGame )
-				pHelpName = "MainMenu";
-			else
-				pHelpName = "GameMenu";
-
-			if ( !m_pConsoleFooter->GetHelpName() || V_stricmp( pHelpName, m_pConsoleFooter->GetHelpName() ) )
-			{
-				// game menu must re-establish its own help once it becomes re-active
-				m_pConsoleFooter->SetHelpNameAndReset( pHelpName );
-				m_pConsoleFooter->AddNewButtonLabel( "#GameUI_Action", "#GameUI_Icons_A_BUTTON" );
-				if ( isInGame )
-				{
-					m_pConsoleFooter->AddNewButtonLabel( "#GameUI_Close", "#GameUI_Icons_B_BUTTON" );
-				}
-			}
-		}
-	}
-
-private:
-	CFooterPanel *m_pConsoleFooter;
-	vgui::CKeyRepeatHandler	m_KeyRepeat;
-};
-
+//=============================================================================
 CBaseModPanel::CBaseModPanel(): BaseClass(0, "CBaseModPanel"),
 	m_bClosingAllWindows( false ),
 	m_lastActiveUserId( 0 )
 {
+#if !defined( _X360 ) && !defined( NOSTEAM )
+	// Set Steam overlay position
+	if ( steamapicontext && steamapicontext->SteamUtils() )
+	{
+		steamapicontext->SteamUtils()->SetOverlayNotificationPosition( k_EPositionTopRight );
+	}
+
+	// Set special DLC parameters mask
+	static ConVarRef mm_dlcs_mask_extras( "mm_dlcs_mask_extras" );
+	if ( mm_dlcs_mask_extras.IsValid() && steamapicontext && steamapicontext->SteamUtils() )
+	{
+		int iDLCmask = mm_dlcs_mask_extras.GetInt();
+
+		// Low Violence and Germany (or bordering countries) = CS.GUNS
+		char const *cc = steamapicontext->SteamUtils()->GetIPCountry();
+		char const *ccGuns = ":DE:DK:PL:CZ:AT:CH:FR:LU:BE:NL:";
+		if ( engine->IsLowViolence() && Q_stristr( ccGuns, CFmtStr( ":%s:", cc ) ) )
+		{
+			// iDLCmask |= ( 1 << ? );
+		}
+
+		// PreOrder DLC AppId Ownership = BAT
+		if ( steamapicontext->SteamApps()->BIsSubscribedApp( 565 ) )
+		{
+			// iDLCmask |= ( 1 << ? );
+		}
+
+		mm_dlcs_mask_extras.SetValue( iDLCmask );
+	}
+
+#endif
+
 	MakePopup( false );
 
 	Assert(m_CFactoryBasePanel == 0);
 	m_CFactoryBasePanel = this;
 
-	g_pVGuiLocalize->AddFile( "resource/lang/%language%_l4d360ui.txt");
-	g_pVGuiLocalize->AddFile( "resource/lang/%language%_gameui.txt"); // replace l4d360ui with this eventually?
-	g_pVGuiLocalize->AddFile( "resource/lang/%language%_ep2.txt");
-	g_pVGuiLocalize->AddFile( "resource/lang/%language%_maplab.txt");
+	g_pVGuiLocalize->AddFile("Resource/swarm_%language%.txt");
+	g_pVGuiLocalize->AddFile( "Resource/basemodui_%language%.txt");
 
 	m_LevelLoading = false;
 	
@@ -518,11 +169,7 @@ CBaseModPanel::CBaseModPanel(): BaseClass(0, "CBaseModPanel"),
 	// needed to allow engine to exec startup commands (background map signal is 1 frame behind) 
 	m_DelayActivation = 3;
 
-	// maybe in the future add a menu for selecting scheme files, for themes and stuff maybe
-	//m_UIScheme = vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/scheme/gameuischeme.res", "GameUIScheme" );
-	m_UIScheme = vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/gameuischeme.res", "SwarmScheme" );
-	//m_UIScheme = vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/sourcescheme.res", "SwarmScheme" );
-
+	m_UIScheme = vgui::scheme()->LoadSchemeFromFileEx( 0, "resource/SwarmSchemeNew.res", "SwarmScheme" );
 	SetScheme( m_UIScheme );
 
 	// Only one user on the PC, so set it now
@@ -536,6 +183,10 @@ CBaseModPanel::CBaseModPanel(): BaseClass(0, "CBaseModPanel"),
 	vgui::surface()->PrecacheFontCharacters( pScheme->GetFont( "DefaultLarge", true ), NULL );
 	vgui::surface()->PrecacheFontCharacters( pScheme->GetFont( "FrameTitle", true ), NULL );
 
+#ifdef _X360
+	x360_audio_english.SetValue( XboxLaunch()->GetForceEnglish() );
+#endif
+
 	m_FooterPanel = new CBaseModFooterPanel( this, "FooterPanel" );
 	m_hOptionsDialog = NULL;
 
@@ -546,29 +197,21 @@ CBaseModPanel::CBaseModPanel(): BaseClass(0, "CBaseModPanel"),
 	m_flLastBlurTime = 0;
 
 	m_iBackgroundImageID = -1;
-	//m_iProductImageID = -1;
+	m_iProductImageID = -1;
 
-	m_backgroundMusic = "MenuMusicSong";
+	m_backgroundMusic = "Misc.MainUI";
 	m_nBackgroundMusicGUID = 0;
 
-	/*m_nProductImageWide = 0;
-	m_nProductImageTall = 0;*/
+	m_nProductImageWide = 0;
+	m_nProductImageTall = 0;
 	m_flMovieFadeInTime = 0.0f;
 	m_pBackgroundMaterial = NULL;
 	m_pBackgroundTexture = NULL;
-
-	//Make it pausable When we reload, the game stops pausing on +esc
-	ConVar *sv_pausable = cvar->FindVar( "sv_pausable" );
-	sv_pausable->SetValue(1);
-	
-	m_pConsoleAnimationController = NULL;
-	m_pConsoleControlSettings = NULL;
 }
 
 //=============================================================================
 CBaseModPanel::~CBaseModPanel()
 {
-	// Game crashes on this
 	ReleaseStartupGraphic();
 
 	if ( m_FooterPanel )
@@ -582,7 +225,7 @@ CBaseModPanel::~CBaseModPanel()
 	m_CFactoryBasePanel = 0;
 
 	surface()->DestroyTextureID( m_iBackgroundImageID );
-	//surface()->DestroyTextureID( m_iProductImageID );
+	surface()->DestroyTextureID( m_iProductImageID );
 
 	// Shutdown UI game data
 	CUIGameData::Shutdown();
@@ -604,7 +247,6 @@ CBaseModPanel* CBaseModPanel::GetSingletonPtr()
 //=============================================================================
 void CBaseModPanel::ReloadScheme()
 {
-
 }
 
 //=============================================================================
@@ -653,16 +295,8 @@ CBaseModFrame* CBaseModPanel::OpenWindow(const WINDOW_TYPE & wt, CBaseModFrame *
 	{
 		switch ( wt )
 		{
-		case WT_ADDONS:
-			m_Frames[wt] = new Addons( this, "Addons" );
-			break;
-
-		case WT_ADDONASSOCIATION:
-			m_Frames[wt] = new AddonAssociation( this, "AddonAssociation" );
-			break;
-
-		case WT_ATTRACTSCREEN:
-			m_Frames[ wt ] = new CAttractScreen( this, "AttractScreen" );
+		case WT_ACHIEVEMENTS:
+			m_Frames[wt] = new Achievements(this, "Achievements");
 			break;
 
 		case WT_AUDIO:
@@ -673,20 +307,68 @@ CBaseModFrame* CBaseModPanel::OpenWindow(const WINDOW_TYPE & wt, CBaseModFrame *
 			m_Frames[wt] = new AudioVideo(this, "AudioVideo");
 			break;
 
-		case WT_CUSTOMCAMPAIGNS:
-			m_Frames[ wt ] = new CustomCampaigns( this, "CustomCampaigns" );
+		case WT_CLOUD:
+#if defined( _X360 )
+			// not for xbox
+			Assert( 0 );
+			break;
+#else
+			m_Frames[wt] = new Cloud(this, "Cloud");
+#endif
 			break;
 
-/*		case WT_GAMEOPTIONS:
+		case WT_CONTROLLER:
+			m_Frames[wt] = new ControllerOptions(this, "ControllerOptions");
+			break;
+
+		case WT_CONTROLLER_STICKS:
+			m_Frames[wt] = new ControllerOptionsSticks(this, "ControllerOptionsSticks");
+			break;
+
+		case WT_CONTROLLER_BUTTONS:
+			m_Frames[wt] = new ControllerOptionsButtons(this, "ControllerOptionsButtons");
+			break;
+
+		case WT_GAMEOPTIONS:
 			m_Frames[wt] = new GameOptions(this, "GameOptions");
 			break;
 
 		case WT_GAMESETTINGS:
 			m_Frames[wt] = new GameSettings(this, "GameSettings");
 			break;
-*/
+
 		case WT_GENERICCONFIRMATION:
 			m_Frames[wt] = new GenericConfirmation(this, "GenericConfirmation");
+			break;
+
+		case WT_INGAMEDIFFICULTYSELECT:
+			m_Frames[wt] = new InGameDifficultySelect(this, "InGameDifficultySelect");
+			break;
+
+		case WT_INGAMEMAINMENU:
+			m_Frames[wt] = new InGameMainMenu(this, "InGameMainMenu");
+			break;
+
+		case WT_INGAMECHAPTERSELECT:
+			m_Frames[wt] = new InGameChapterSelect(this, "InGameChapterSelect");
+			break;
+
+		case WT_INGAMEKICKPLAYERLIST:
+			m_Frames[wt] = new InGameKickPlayerList(this, "InGameKickPlayerList");
+			break;
+
+		case WT_VOTEOPTIONS:
+			m_Frames[wt] = new VoteOptions(this, "VoteOptions");
+			break;
+
+		case WT_KEYBOARDMOUSE:
+#if defined( _X360 )
+			// not for xbox
+			Assert( 0 );
+			break;
+#else
+			m_Frames[wt] = new VKeyboard(this, "VKeyboard");
+#endif
 			break;
 
 		case WT_LOADINGPROGRESSBKGND:
@@ -697,29 +379,92 @@ CBaseModFrame* CBaseModPanel::OpenWindow(const WINDOW_TYPE & wt, CBaseModFrame *
 			m_Frames[wt] = new LoadingProgress( this, "LoadingProgress", LoadingProgress::LWT_LOADINGPLAQUE );
 			break;
 
-		case WT_INGAMEMAINMENU:
-			m_Frames[wt] = new InGameMainMenu(this, "InGameMainMenu");
-			//m_Frames[wt] = new MainMenu(this, "MainMenu");
-			break;
-
-		case WT_KEYBOARDMOUSE:
-			m_Frames[wt] = new VKeyboard(this, "VKeyboard");
-			break;
-
 		case WT_MAINMENU:
 			m_Frames[wt] = new MainMenu(this, "MainMenu");
 			break;
 
-		/*case WT_OPTIONS:
+		case WT_MULTIPLAYER:
+			m_Frames[wt] = new Multiplayer(this, "Multiplayer");
+			break;
+
+		case WT_OPTIONS:
 			m_Frames[wt] = new Options(this, "Options");
-			break;*/
-			
+			break;
+
+		case WT_SIGNINDIALOG:
+			m_Frames[wt] = new SignInDialog(this, "SignInDialog");
+			break;
+
+		case WT_GENERICWAITSCREEN:
+			m_Frames[ wt ] = new GenericWaitScreen( this, "GenericWaitScreen" );
+			break;
+
+		case WT_PASSWORDENTRY:
+			m_Frames[ wt ] = new PasswordEntry( this, "PasswordEntry" );
+			break;
+
+		case WT_ATTRACTSCREEN:
+			m_Frames[ wt ] = new CAttractScreen( this, "AttractScreen" );
+			break;
+
+		case WT_ALLGAMESEARCHRESULTS:
+			m_Frames[ wt ] = new FoundGames( this, "FoundGames" );
+			break;
+
+		case WT_FOUNDPUBLICGAMES:
+			m_Frames[ wt ] = new FoundPublicGames( this, "FoundPublicGames" );
+			break;
+
 		case WT_TRANSITIONSCREEN:
 			m_Frames[wt] = new CTransitionScreen( this, "TransitionScreen" );
 			break;
 
 		case WT_VIDEO:
 			m_Frames[wt] = new Video(this, "Video");
+			break;
+
+		case WT_STEAMCLOUDCONFIRM:
+#if defined( _X360 )
+			// not for xbox
+			Assert( 0 );
+			break;
+#else
+			m_Frames[wt] = new SteamCloudConfirmation(this, "SteamCloudConfirmation");
+#endif
+			break;
+
+		case WT_LEADERBOARD:
+			m_Frames[ wt ] = new Leaderboard( this );
+			break;
+
+		case WT_JUKEBOX:
+#if defined( _X360 )
+			// not for xbox
+			Assert( 0 );
+			break;
+#else
+			m_Frames[wt] = new VJukebox( this, "Jukebox" );
+#endif
+			break;
+
+		case WT_ADDONASSOCIATION:
+#if defined( _X360 )
+			// not for xbox
+			Assert( 0 );
+			break;
+#else
+			m_Frames[wt] = new AddonAssociation( this, "AddonAssociation" );
+#endif
+			break;
+
+		case WT_GETLEGACYDATA:
+#if defined( _X360 )
+			// not for xbox
+			Assert( 0 );
+			break;
+#else
+			m_Frames[wt] = new GetLegacyData( this, "GetLegacyData" );
+#endif
 			break;
 
 		default:
@@ -806,7 +551,7 @@ CBaseModFrame* CBaseModPanel::OpenWindow(const WINDOW_TYPE & wt, CBaseModFrame *
 	return newNav;
 }
 
-///=============================================================================
+//=============================================================================
 CBaseModFrame * CBaseModPanel::GetWindow( const WINDOW_TYPE& wt )
 {
 	return m_Frames[wt].Get();
@@ -1068,21 +813,6 @@ bool CBaseModPanel::ActivateBackgroundEffects()
 	return true;
 }
 
-#if defined( _X360 ) && defined( _DEMO )
-void CBaseModPanel::OnDemoTimeout()
-{
-	if ( !engine->IsInGame() && !engine->IsConnected() && !engine->IsDrawingLoadingImage() )
-	{
-		// exit is terminal and unstoppable
-		StartExitingProcess( false );
-	}
-	else
-	{
-		engine->ExecuteClientCmd( "disconnect" );
-	}
-}
-#endif
-
 //=============================================================================
 void CBaseModPanel::OnGameUIActivated()
 {
@@ -1097,6 +827,38 @@ void CBaseModPanel::OnGameUIActivated()
 	}
 
 	COM_TimestampedLog( "CBaseModPanel::OnGameUIActivated()" );
+
+#if defined( _X360 )
+	if ( !engine->IsInGame() && !engine->IsConnected() && !engine->IsDrawingLoadingImage() )
+	{
+#if defined( _DEMO )
+		if ( engine->IsDemoExiting() )
+		{
+			// just got activated, maybe from a disconnect
+			// exit is terminal and unstoppable
+			SetVisible( true );
+			StartExitingProcess( false );
+			return;
+		}
+#endif
+		if ( !GameUI().IsInLevel() && !GameUI().IsInBackgroundLevel() )
+		{
+			// not using a background map
+			// start the menu movie and music now, as the main menu is about to open
+			// these are very large i/o operations on the xbox
+			// they must occur before the installer takes over the DVD
+			// otherwise the transfer rate is so slow and we sync stall for 10-15 seconds
+			ActivateBackgroundEffects();
+		}
+		// the installer runs in the background during the main menu
+		g_pXboxInstaller->Start();
+
+#if defined( _DEMO )
+		// ui valid can now adhere to demo timeout rules
+		engine->EnableDemoTimeout( true );
+#endif
+	}
+#endif
 
 	SetVisible( true );
 
@@ -1119,7 +881,7 @@ void CBaseModPanel::OnGameUIActivated()
 		default:
 			break;
 		case WT_NONE:
-		case WT_MAINMENU: //case WT_INGAMEMAINMENU:
+		case WT_INGAMEMAINMENU:
 		case WT_GENERICCONFIRMATION:
 			// bForceReturnToFrontScreen = !g_pMatchFramework->GetMatchmaking()->ShouldPreventOpenFrontScreen();
 			bForceReturnToFrontScreen = true; // this used to be some magic about mid-disconnecting-states on PC...
@@ -1132,15 +894,13 @@ void CBaseModPanel::OnGameUIActivated()
 	}
 	else if ( engine->IsConnected() && !m_LevelLoading )
 	{
-		//CBaseModFrame *pInGameMainMenu = m_Frames[ WT_INGAMEMAINMENU ].Get();
-		CBaseModFrame *pInGameMainMenu = m_Frames[ WT_MAINMENU ].Get();
+		CBaseModFrame *pInGameMainMenu = m_Frames[ WT_INGAMEMAINMENU ].Get();
 
 		if ( !pInGameMainMenu || !pInGameMainMenu->IsAutoDeleteSet() )
 		{
 			// Prevent in game menu from opening if it already exists!
 			// It might be hiding behind a modal window that needs to keep focus
-			//OpenWindow( WT_INGAMEMAINMENU, 0 );
-			OpenWindow( WT_MAINMENU, 0 );
+			OpenWindow( WT_INGAMEMAINMENU, 0 );
 		}
 	}
 }
@@ -1152,6 +912,11 @@ void CBaseModPanel::OnGameUIHidden()
 	{
 		Msg( "[GAMEUI] CBaseModPanel::OnGameUIHidden()\n" );
 	}
+
+#if defined( _X360 )
+	// signal the installer to stop
+	g_pXboxInstaller->Stop();
+#endif
 
 // 	// We want to check here if we have any pending message boxes and
 // 	// if so, then we cannot just simply destroy all the UI elements
@@ -1280,7 +1045,7 @@ void CBaseModPanel::RunFrame()
 
 	if ( !bDoBlur )
 	{
-		bDoBlur = false;// GameClientExports()->ClientWantsBlurEffect();
+		bDoBlur = GameClientExports()->ClientWantsBlurEffect();
 	}
 
 	float nowTime = Plat_FloatTime();
@@ -1290,7 +1055,7 @@ void CBaseModPanel::RunFrame()
 		m_flLastBlurTime = nowTime;
 		m_flBlurScale += deltaTime * bDoBlur ? 0.05f : -0.05f;
 		m_flBlurScale = clamp( m_flBlurScale, 0, 0.85f );
-		//engine->SetBlurFade( m_flBlurScale );
+		engine->SetBlurFade( m_flBlurScale );
 	}
 
 	if ( IsX360() && m_ExitingFrameCount )
@@ -1320,10 +1085,26 @@ void CBaseModPanel::RunFrame()
 	}
 }
 
+
 //=============================================================================
 void CBaseModPanel::OnLevelLoadingStarted( char const *levelName, bool bShowProgressDialog )
 {
 	Assert( !m_LevelLoading );
+
+#if defined( _X360 )
+	// stop the installer
+	g_pXboxInstaller->Stop();
+	g_pXboxInstaller->SpewStatus();
+
+	// If the installer has finished while we are in the menus, then this is the ONLY place we
+	// know that there is no open files and we can redirect the search paths
+	if ( g_pXboxInstaller->ForceCachePaths() )
+	{
+		// the search paths got changed
+		// notify other systems who may have hooked absolute paths
+		engine->SearchPathsChangedAfterInstall();
+	}
+#endif
 
 	CloseAllWindows();
 
@@ -1342,6 +1123,60 @@ void CBaseModPanel::OnLevelLoadingStarted( char const *levelName, bool bShowProg
 	char chGameMode[64] = {0};
 
 	//
+	// If playing on listen server then "levelName" is set to the map being loaded,
+	// so it is authoritative - it might be a background map or a real level.
+	//
+	if ( levelName )
+	{
+		// Derive the mission info from the server game details
+		KeyValues *pGameSettings = g_pMatchFramework->GetMatchNetworkMsgController()->GetActiveServerGameDetails( NULL );
+		if ( !pGameSettings )
+		{
+			// In this particular case we need to speculate about game details
+			// this happens when user types "map c5m2 versus easy" from console, so there's no
+			// active server spawned yet, nor is the local client connected to any server.
+			// We have to force server DLL to apply the map command line to the settings and then
+			// speculatively construct the settings key.
+			if ( IServerGameDLL *pServerDLL = ( IServerGameDLL * ) g_pMatchFramework->GetMatchExtensions()->GetRegisteredExtensionInterface( INTERFACEVERSION_SERVERGAMEDLL ) )
+			{
+				KeyValues *pApplyServerSettings = new KeyValues( "::ExecGameTypeCfg" );
+				KeyValues::AutoDelete autodelete_pApplyServerSettings( pApplyServerSettings );
+
+				pApplyServerSettings->SetString( "map/mapname", levelName );
+
+				pServerDLL->ApplyGameSettings( pApplyServerSettings );
+			}
+
+			static ConVarRef r_mp_gamemode( "mp_gamemode" );
+			if ( r_mp_gamemode.IsValid() )
+			{
+				pGameSettings = new KeyValues( "CmdLineSettings" );
+				pGameSettings->SetString( "game/mode", r_mp_gamemode.GetString() );
+			}
+		}
+		
+		KeyValues::AutoDelete autodelete_pGameSettings( pGameSettings );
+		if ( pGameSettings )
+		{
+			// It is critical to get map info by the actual levelname that is being loaded, because
+			// for level transitions the server is still in the old map and the game settings returned
+			// will reflect the old state of the server.
+			pChapterInfo = g_pMatchExtSwarm->GetMapInfoByBspName( pGameSettings, levelName, &pMissionInfo );
+			Q_strncpy( chGameMode, pGameSettings->GetString( "game/mode", "" ), ARRAYSIZE( chGameMode ) );
+		}
+	}
+	
+	IMatchSession *pSession = g_pMatchFramework->GetMatchSession();
+	if ( !pChapterInfo && pSession  )
+	{
+		if ( KeyValues *pSettings = pSession->GetSessionSettings() )
+		{
+			pChapterInfo = g_pMatchExtSwarm->GetMapInfo( pSettings, &pMissionInfo );
+			Q_strncpy( chGameMode, pSettings->GetString( "game/mode", "" ), ARRAYSIZE( chGameMode ) );
+		}
+	}
+
+	//
 	// If we are just loading into some unknown map, then fake chapter information
 	// (static lifetime of fake keyvalues so that we didn't worry about ownership)
 	//
@@ -1349,13 +1184,13 @@ void CBaseModPanel::OnLevelLoadingStarted( char const *levelName, bool bShowProg
 	{
 		static KeyValues *s_pFakeMissionInfo = new KeyValues( "" );
 		pMissionInfo = s_pFakeMissionInfo;
-		pMissionInfo->SetString( "displaytitle", "#L4D360UI_Lobby_Unknown_Campaign" );
+		pMissionInfo->SetString( "displaytitle", "#GameUI_Lobby_Unknown_Campaign" );
 	}
 	if ( !pChapterInfo )
 	{
 		static KeyValues *s_pFakeChapterInfo = new KeyValues( "1" );
 		pChapterInfo = s_pFakeChapterInfo;
-		pChapterInfo->SetString( "displayname", levelName ? levelName : "#L4D360UI_Lobby_Unknown_Campaign" );
+		pChapterInfo->SetString( "displayname", levelName ? levelName : "#GameUI_Lobby_Unknown_Campaign" );
 		pChapterInfo->SetString( "map", levelName ? levelName : "" );
 	}
 	
@@ -1376,10 +1211,50 @@ void CBaseModPanel::OnLevelLoadingStarted( char const *levelName, bool bShowProg
 		// These names match the order of the enum Avatar_t in imatchmaking.h
 
 		const char *pPlayerNames[NUM_LOADING_CHARACTERS] = { NULL, NULL, NULL, NULL };
-		//const char *pAvatarNames[NUM_LOADING_CHARACTERS] = { "", "", "", "" };
+		const char *pAvatarNames[NUM_LOADING_CHARACTERS] = { "", "", "", "" };
 
 		unsigned char botFlags = 0xFF;
 
+		if ( IMatchSession *pSession = g_pMatchFramework->GetMatchSession() )
+		{
+			KeyValues *pSettings = pSession->GetSessionSettings();
+			if ( pSettings )
+				pSettings = pSettings->FindKey( "members" );
+
+			int numMachines = pSettings->GetInt( "numMachines", 0 );
+			for ( int iMachine = 0; iMachine < numMachines; ++ iMachine )
+			{
+				char chMachine[32];
+				sprintf( chMachine, "machine%d", iMachine );
+				KeyValues *pMachine = pSettings->FindKey( chMachine );
+
+				int numPlayers = pMachine->GetInt( "numPlayers", 0 );
+				for ( int iPlayer = 0; iPlayer < numPlayers; ++ iPlayer )
+				{
+					char chPlayer[32];
+					sprintf( chPlayer, "player%d", iPlayer );
+					KeyValues *pPlayer = pMachine->FindKey( chPlayer );
+
+					XUID xuidPlayer = pPlayer->GetUint64( "xuid", 0ull );
+					char const *szPlayerName = pPlayer->GetString( "name", "" );
+					szPlayerName = CUIGameData::Get()->GetPlayerName( xuidPlayer, szPlayerName );
+					char const *szAvatar = pPlayer->GetString( "game/avatar", "" );
+
+					// Find the avatar
+					int iAvatar;
+					for ( iAvatar = 0; iAvatar < ARRAYSIZE( pAvatarNames ); ++ iAvatar )
+					{
+						if ( !Q_stricmp( pAvatarNames[iAvatar], szAvatar ) )
+							break;
+					}
+					if ( iAvatar < ARRAYSIZE( pPlayerNames ) )
+					{
+						pPlayerNames[ iAvatar ] = szPlayerName;
+						botFlags &= ~(1 << iAvatar);
+					}
+				}
+			}
+		}
 		pLoadingProgress->SetPosterData( pMissionInfo, pChapterInfo, pPlayerNames, botFlags, chGameMode );
 	}
 	else if ( GameUI().IsInLevel() && !GameUI().IsInBackgroundLevel() )
@@ -1401,11 +1276,6 @@ void CBaseModPanel::OnLevelLoadingStarted( char const *levelName, bool bShowProg
 
 void CBaseModPanel::OnEngineLevelLoadingSession( KeyValues *pEvent )
 {
-	if ( UI_IsDebug() )
-	{
-		Msg( "[GAMEUI] CBaseModPanel::OnEngineLevelLoadingSession\n");
-	}
-
 	// We must keep the default loading poster because it will be replaced by
 	// the real campaign loading poster shortly
 	float flProgress = 0.0f;
@@ -1437,6 +1307,14 @@ void CBaseModPanel::OnLevelLoadingFinished( KeyValues *kvEvent )
 	{
 		Msg( "[GAMEUI] CBaseModPanel::OnLevelLoadingFinished( %s, %s )\n", bError ? "Had Error" : "No Error", failureReason );
 	}
+
+#if defined( _X360 )
+	if ( GameUI().IsInBackgroundLevel() )
+	{
+		// start the installer when running the background map has finished
+		g_pXboxInstaller->Start();
+	}
+#endif
 
 	LoadingProgress *pLoadingProgress = static_cast<LoadingProgress*>( GetWindow( WT_LOADINGPROGRESS ) );
 	if ( pLoadingProgress )
@@ -1474,12 +1352,40 @@ void CBaseModPanel::OnLevelLoadingFinished( KeyValues *kvEvent )
 		if ( pMsg )
 		{
 			GenericConfirmation::Data_t data;
-			data.pWindowTitle = "#L4D360UI_MsgBx_DisconnectedFromServer";			
+			data.pWindowTitle = "#GameUI_MsgBx_DisconnectedFromServer";			
 			data.bOkButtonEnabled = true;
 			data.pMessageText = failureReason;
 			pMsg->SetUsageData( data );
 		}		
 	}
+}
+
+class CMatchSessionCreationAsyncOperation : public IMatchAsyncOperation
+{
+public:
+	CMatchSessionCreationAsyncOperation() : m_eState( AOS_RUNNING ) {}
+
+public:
+	virtual bool IsFinished() { return false; }
+	virtual AsyncOperationState_t GetState() { return m_eState; }
+	virtual uint64 GetResult() { return 0ull; }
+	virtual void Abort();
+	virtual void Release() { Assert( 0 ); } // we are a global object, cannot release
+
+public:
+	IMatchAsyncOperation * Prepare() { m_eState = AOS_RUNNING; return this; }
+
+protected:
+	AsyncOperationState_t m_eState;
+}
+g_MatchSessionCreationAsyncOperation;
+
+void CMatchSessionCreationAsyncOperation::Abort()
+{
+	m_eState = AOS_ABORTING;
+
+	CBaseModPanel::GetSingleton().CloseAllWindows();
+	CBaseModPanel::GetSingleton().OpenFrontScreen();
 }
 
 void CBaseModPanel::OnEvent( KeyValues *pEvent )
@@ -1506,7 +1412,6 @@ bool CBaseModPanel::UpdateProgressBar( float progress, const char *statusText )
 		return false;
 	}
 
-
 	LoadingProgress *loadingProgress = static_cast<LoadingProgress*>( OpenWindow( WT_LOADINGPROGRESS, 0 ) );
 
 	// Even if the progress hasn't advanced, we want to go ahead and refresh if it has been more than 1/10 seconds since last refresh to keep the spinny thing going.
@@ -1520,11 +1425,6 @@ bool CBaseModPanel::UpdateProgressBar( float progress, const char *statusText )
 		// update progress
 		loadingProgress->SetProgress( progress );
 		s_LastEngineTime = time;
-
-		if ( UI_IsDebug() )
-		{
-			Msg( "[GAMEUI] [GAMEUI] CBaseModPanel::UpdateProgressBar(%.2f %s)\n", loadingProgress->GetProgress(), statusText );
-		}
 		return true;
 	}
 
@@ -1606,13 +1506,12 @@ static void BaseUI_PositionDialog(vgui::PHandle dlg)
 	dlg->GetSize(wide, tall);
 
 	// Center it, keeping requested size
-	// ...why would you do that? just do that in the resource files
-	//dlg->SetPos(x + ((ww - wide) / 2), y + ((wt - tall) / 2));
+	dlg->SetPos(x + ((ww - wide) / 2), y + ((wt - tall) / 2));
 }
 
 
 //=============================================================================
-void CBaseModPanel::OpenOptionsDialog( EditablePanel *parent )
+void CBaseModPanel::OpenOptionsDialog( Panel *parent )
 {
 	if ( IsPC() )
 	{			
@@ -1627,22 +1526,7 @@ void CBaseModPanel::OpenOptionsDialog( EditablePanel *parent )
 }
 
 //=============================================================================
-void CBaseModPanel::OpenOptionsMouseDialog( EditablePanel *parent )
-{
-	if ( IsPC() )
-	{			
-		if ( !m_hOptionsMouseDialog.Get() )
-		{
-			m_hOptionsMouseDialog = new COptionsMouseDialog( parent );
-			BaseUI_PositionDialog( m_hOptionsMouseDialog );
-		}
-
-		m_hOptionsMouseDialog->Activate();
-	}
-}
-
-//=============================================================================
-void CBaseModPanel::OpenKeyBindingsDialog( EditablePanel *parent )
+void CBaseModPanel::OpenKeyBindingsDialog( Panel *parent )
 {
 	if ( IsPC() )
 	{			
@@ -1673,57 +1557,64 @@ void CBaseModPanel::ApplySchemeSettings(IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
-	//SetBgColor(pScheme->GetColor("Blank", Color(0, 0, 0, 0)));
-	SetBgColor(pScheme->GetColor("ass", Color(64, 64, 96, 255)));
+	SetBgColor(pScheme->GetColor("Blank", Color(0, 0, 0, 0)));
 
 	int screenWide, screenTall;
 	surface()->GetScreenSize( screenWide, screenTall );
 
 	char filename[MAX_PATH];
-	V_snprintf( filename, sizeof( filename ), "VGUI/loading/BGFX01" ); // TODO: engine->GetStartupImage( filename, sizeof( filename ), screenWide, screenTall );
+	V_snprintf( filename, sizeof( filename ), "VGUI/swarm/loading/BGFX01" ); // TODO: engine->GetStartupImage( filename, sizeof( filename ), screenWide, screenTall );
 	m_iBackgroundImageID = surface()->CreateNewTextureID();
 	surface()->DrawSetTextureFile( m_iBackgroundImageID, filename, true, false );
 
-	/*m_iProductImageID = surface()->CreateNewTextureID();
-	//surface()->DrawSetTextureFile( m_iProductImageID, "vgui/logo", true, false );
-	surface()->DrawSetTextureFile( m_iProductImageID, "vgui/logo", true, true );
+	m_iProductImageID = surface()->CreateNewTextureID();
+	surface()->DrawSetTextureFile( m_iProductImageID, "console/startup_loading", true, false );
 
 	// need these to be anchored now, can't come into existence during load
 	PrecacheLoadingTipIcons();
 
 	int logoW = 384;
-	int logoH = 192;*/
+	int logoH = 192;
 
 	bool bIsWidescreen;
-
+#if !defined( _X360 )
 	float aspectRatio = (float)screenWide/(float)screenTall;
 	bIsWidescreen = aspectRatio >= 1.5999f;
-	/*if ( !bIsWidescreen )
+#else
+	static ConVarRef mat_xbox_iswidescreen( "mat_xbox_iswidescreen" );
+	bIsWidescreen = mat_xbox_iswidescreen.GetBool();
+#endif
+	if ( !bIsWidescreen )
 	{
 		// smaller in standard res
 		logoW = 320;
 		logoH = 160;
 	}
-	
-	m_nProductImageX = vgui::scheme()->GetProportionalScaledValue( atoi( pScheme->GetResourceString( "Logo.X" ) ) );
-	m_nProductImageY = vgui::scheme()->GetProportionalScaledValue( atoi( pScheme->GetResourceString( "Logo.Y" ) ) );
+
 	m_nProductImageWide = vgui::scheme()->GetProportionalScaledValue( logoW );
-	m_nProductImageTall = vgui::scheme()->GetProportionalScaledValue( logoH );*/
+	m_nProductImageTall = vgui::scheme()->GetProportionalScaledValue( logoH );
 
 	if ( aspectRatio >= 1.6f )
 	{
 		// use the widescreen version
-		Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s_widescreen.vtf", "background01" );
+		Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s_widescreen.vtf", "SwarmSelectionScreen" );
 	}
 	else
 	{
-		Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s_widescreen.vtf", "background01" );
+		Q_snprintf( m_szFadeFilename, sizeof( m_szFadeFilename ), "materials/console/%s_widescreen.vtf", "SwarmSelectionScreen" );
 	}
 
 	// TODO: GetBackgroundMusic
 #if 0
 
 	bool bUseMono = false;
+#if defined( _X360 )
+	// cannot use the very large stereo version during the install
+	 bUseMono = g_pXboxInstaller->IsInstallEnabled() && !g_pXboxInstaller->IsFullyInstalled();
+#if defined( _DEMO )
+	bUseMono = true;
+#endif
+#endif
 
 	char backgroundMusic[MAX_PATH];
 	engine->GetBackgroundMusic( backgroundMusic, sizeof( backgroundMusic ), bUseMono );
@@ -1762,6 +1653,70 @@ void CBaseModPanel::DrawColoredText( vgui::HFont hFont, int x, int y, unsigned i
 
 void CBaseModPanel::DrawCopyStats()
 {
+#if defined( _X360 )
+	int wide, tall;
+	GetSize( wide, tall );
+
+	int xPos = 0.1f * wide;
+	int yPos = 0.1f * tall;
+
+	// draw copy status
+	char textBuffer[256];
+	const CopyStats_t *pCopyStats = g_pXboxInstaller->GetCopyStats();	
+
+	V_snprintf( textBuffer, sizeof( textBuffer ), "Version: %d (%s)", g_pXboxInstaller->GetVersion(), XBX_GetLanguageString() );
+	DrawColoredText( m_hDefaultFont, xPos, yPos, 0xffff00ff, textBuffer );
+	yPos += 20;
+
+	V_snprintf( textBuffer, sizeof( textBuffer ), "DVD Hosted: %s", g_pFullFileSystem->IsDVDHosted() ? "Enabled" : "Disabled" );
+	DrawColoredText( m_hDefaultFont, xPos, yPos, 0xffff00ff, textBuffer );
+	yPos += 20;
+
+	bool bDrawProgress = true;
+	if ( g_pFullFileSystem->IsInstalledToXboxHDDCache() )
+	{
+		DrawColoredText( m_hDefaultFont, xPos, yPos, 0x00ff00ff, "Existing Image Found." );
+		yPos += 20;
+		bDrawProgress = false;
+	}
+	if ( !g_pXboxInstaller->IsInstallEnabled() )
+	{
+		DrawColoredText( m_hDefaultFont, xPos, yPos, 0xff0000ff, "Install Disabled." );
+		yPos += 20;
+		bDrawProgress = false;
+	}
+	if ( g_pXboxInstaller->IsFullyInstalled() )
+	{
+		DrawColoredText( m_hDefaultFont, xPos, yPos, 0x00ff00ff, "Install Completed." );
+		yPos += 20;
+	}
+
+	if ( bDrawProgress )
+	{
+		yPos += 20;
+		V_snprintf( textBuffer, sizeof( textBuffer ), "From: %s (%.2f MB)", pCopyStats->m_srcFilename, (float)pCopyStats->m_ReadSize/(1024.0f*1024.0f) );
+		DrawColoredText( m_hDefaultFont, xPos, yPos, 0xffff00ff, textBuffer );
+		V_snprintf( textBuffer, sizeof( textBuffer ), "To: %s (%.2f MB)", pCopyStats->m_dstFilename, (float)pCopyStats->m_WriteSize/(1024.0f*1024.0f)  );
+		DrawColoredText( m_hDefaultFont, xPos, yPos + 20, 0xffff00ff, textBuffer );
+
+		float elapsed = 0;
+		float rate = 0;
+		if ( pCopyStats->m_InstallStartTime )
+		{
+			elapsed = (float)(GetTickCount() - pCopyStats->m_InstallStartTime) * 0.001f;
+		}
+		if ( pCopyStats->m_InstallStopTime )
+		{
+			elapsed = (float)(pCopyStats->m_InstallStopTime - pCopyStats->m_InstallStartTime) * 0.001f;
+		}
+		if ( elapsed )
+		{
+			rate = pCopyStats->m_TotalWriteSize/elapsed;
+		}
+		V_snprintf( textBuffer, sizeof( textBuffer ), "Progress: %d/%d MB Elapsed: %d secs (%.2f MB/s)", pCopyStats->m_BytesCopied/(1024*1024), g_pXboxInstaller->GetTotalSize()/(1024*1024), (int)elapsed, rate/(1024.0f*1024.0f) );
+		DrawColoredText( m_hDefaultFont, xPos, yPos + 40, 0xffff00ff, textBuffer );
+	}
+#endif
 }
 
 //=============================================================================
@@ -1774,7 +1729,7 @@ void CBaseModPanel::PaintBackground()
 		int wide, tall;
 		GetSize( wide, tall );
 
-		if ( false /*engine->IsTransitioningToLoad()*/ )
+		if ( engine->IsTransitioningToLoad() )
 		{
 			// ensure the background is clear
 			// the loading progress is about to take over in a few frames
@@ -1787,81 +1742,10 @@ void CBaseModPanel::PaintBackground()
 		{
 			ActivateBackgroundEffects();
 
-			//if ( ASWBackgroundMovie() )
-			//{
-			//	ASWBackgroundMovie()->Update();
-
-				/*if (ASWBackgroundMovie()->GetVideoMaterial())
-				{
-					// Draw the polys to draw this out
-					CMatRenderContextPtr pRenderContext( materials );
-	
-					pRenderContext->MatrixMode( MATERIAL_VIEW );
-					pRenderContext->PushMatrix();
-					pRenderContext->LoadIdentity();
-
-					pRenderContext->MatrixMode( MATERIAL_PROJECTION );
-					pRenderContext->PushMatrix();
-					pRenderContext->LoadIdentity();
-
-					pRenderContext->Bind( ASWBackgroundMovie()->GetVideoMaterial()->GetMaterial(), NULL );
-
-					CMeshBuilder meshBuilder;
-					IMesh* pMesh = pRenderContext->GetDynamicMesh( true );
-					meshBuilder.Begin( pMesh, MATERIAL_QUADS, 1 );
-
-					int xpos = 0;
-					int ypos = 0;
-					vgui::ipanel()->GetAbsPos(GetVPanel(), xpos, ypos);
-
-					float flLeftX = xpos;
-					float flRightX = xpos + ( ASWBackgroundMovie()->m_nPlaybackWidth-1 );
-
-					float flTopY = ypos;
-					float flBottomY = ypos + ( ASWBackgroundMovie()->m_nPlaybackHeight-1 );
-
-					// Map our UVs to cut out just the portion of the video we're interested in
-					float flLeftU = 0.0f;
-					float flTopV = 0.0f;
-
-					// We need to subtract off a pixel to make sure we don't bleed
-					float flRightU = ASWBackgroundMovie()->m_flU - ( 1.0f / (float) ASWBackgroundMovie()->m_nPlaybackWidth );
-					float flBottomV = ASWBackgroundMovie()->m_flV - ( 1.0f / (float) ASWBackgroundMovie()->m_nPlaybackHeight );
-
-					// Get the current viewport size
-					int vx, vy, vw, vh;
-					pRenderContext->GetViewport( vx, vy, vw, vh );
-
-					// map from screen pixel coords to -1..1
-					flRightX = FLerp( -1, 1, 0, vw, flRightX );
-					flLeftX = FLerp( -1, 1, 0, vw, flLeftX );
-					flTopY = FLerp( 1, -1, 0, vh ,flTopY );
-					flBottomY = FLerp( 1, -1, 0, vh, flBottomY );
-
-					float alpha = ((float)GetFgColor()[3]/255.0f);
-
-					for ( int corner=0; corner<4; corner++ )
-					{
-						bool bLeft = (corner==0) || (corner==3);
-						meshBuilder.Position3f( (bLeft) ? flLeftX : flRightX, (corner & 2) ? flBottomY : flTopY, 0.0f );
-						meshBuilder.Normal3f( 0.0f, 0.0f, 1.0f );
-						meshBuilder.TexCoord2f( 0, (bLeft) ? flLeftU : flRightU, (corner & 2) ? flBottomV : flTopV );
-						meshBuilder.TangentS3f( 0.0f, 1.0f, 0.0f );
-						meshBuilder.TangentT3f( 1.0f, 0.0f, 0.0f );
-						meshBuilder.Color4f( 1.0f, 1.0f, 1.0f, alpha );
-						meshBuilder.AdvanceVertex();
-					}
-	
-					meshBuilder.End();
-					pMesh->Draw();
-
-					pRenderContext->MatrixMode( MATERIAL_VIEW );
-					pRenderContext->PopMatrix();
-
-					pRenderContext->MatrixMode( MATERIAL_PROJECTION );
-					pRenderContext->PopMatrix();
-				}*/
-				/*if ( ASWBackgroundMovie()->SetTextureMaterial() != -1 )
+			if ( ASWBackgroundMovie() )
+			{
+				ASWBackgroundMovie()->Update();
+				if ( ASWBackgroundMovie()->SetTextureMaterial() != -1 )
 				{
 					surface()->DrawSetColor( 255, 255, 255, 255 );
 					int x, y, w, h;
@@ -1889,10 +1773,17 @@ void CBaseModPanel::PaintBackground()
 						}
 						DrawStartupGraphic( flFadeDelta );
 					}
-				}*/
-			//}
+				}
+			}
 		}
 	}
+
+#if defined( _X360 )
+	if ( !m_LevelLoading && !GameUI().IsInLevel() && xbox_install_status.GetBool() )
+	{
+		DrawCopyStats();
+	}
+#endif
 }
 
 IVTFTexture *LoadVTF( CUtlBuffer &temp, const char *szFileName )
@@ -2095,7 +1986,6 @@ void DrawScreenSpaceRectangleAlpha( IMaterial *pMaterial,
 	pRenderContext->PopMatrix();
 }
 
-
 void CBaseModPanel::DrawStartupGraphic( float flNormalizedAlpha )
 {
 	CMatRenderContextPtr pRenderContext( g_pMaterialSystem );
@@ -2119,7 +2009,6 @@ void CBaseModPanel::OnCommand(const char *command)
 			StartExitingProcess( false );
 		}
 	}
-	/*
 	else if ( !Q_stricmp( command, "RestartWithNewLanguage" ) )
 	{
 		if ( !IsX360() )
@@ -2148,7 +2037,6 @@ void CBaseModPanel::OnCommand(const char *command)
 			}
 		}
 	}
-	*/
 	else
 	{
 		BaseClass::OnCommand( command );
@@ -2214,6 +2102,11 @@ void CBaseModPanel::StartExitingProcess( bool bWarmRestart )
 		// already fired
 		return;
 	}
+
+#if defined( _X360 )
+	// signal the installer to stop
+	g_pXboxInstaller->Stop();
+#endif
 
 	// cold restart or warm
 	m_bWarmRestartMode = bWarmRestart;
@@ -2285,6 +2178,7 @@ bool CBaseModPanel::StartBackgroundMusic( float fVol )
 		
 	return ( m_nBackgroundMusicGUID != 0 );
 }
+
 void CBaseModPanel::UpdateBackgroundMusicVolume( float fVol )
 {
 	if ( !IsBackgroundMusicPlaying() )
@@ -2328,1196 +2222,3 @@ void CBaseModPanel::SafeNavigateTo( Panel *pExpectedFrom, Panel *pDesiredTo, boo
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: runs an animation sequence, then calls a message mapped function
-//			when the animation is complete. 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::RunAnimationWithCallback(vgui::Panel *parent, const char *animName, KeyValues *msgFunc)
-{
-	return; //more stupid console stuff aaaaaa
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: runs an animation to close a dialog and cleans up after close
-//-----------------------------------------------------------------------------
-void CBaseModPanel::RunCloseAnimation(const char *animName)
-{
-	RunAnimationWithCallback( this, animName, new KeyValues( "FinishDialogClose" ) );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: starts the game
-//-----------------------------------------------------------------------------
-void CBaseModPanel::FadeToBlackAndRunEngineCommand(const char *engineCommand)
-{
-	KeyValues *pKV = new KeyValues("RunEngineCommand", "command", engineCommand);
-
-	// execute immediately, with no delay
-	PostMessage(this, pKV, 0);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Add an Xbox 360 message dialog to a dialog stack
-//-----------------------------------------------------------------------------
-void CBaseModPanel::ShowMessageDialog(const uint nType, vgui::Panel *pOwner)
-{
-	if (pOwner == NULL)
-	{
-		pOwner = this;
-	}
-
-	//m_MessageDialogHandler.ShowMessageDialog(nType, pOwner);
-}
-
-void CBaseModPanel::SetMenuItemBlinkingState(const char *itemName, bool state)
-{
-	for (int i = 0; i < GetChildCount(); i++)
-	{
-		Panel *child = GetChild(i);
-		CGameMenu *pGameMenu = dynamic_cast<CGameMenu *>(child);
-		if ( pGameMenu )
-		{
-			pGameMenu->SetMenuItemBlinkingState( itemName, state );
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Xbox 360 - Get the console UI keyvalues to pass to LoadControlSettings()
-//-----------------------------------------------------------------------------
-KeyValues *CBaseModPanel::GetConsoleControlSettings(void)
-{
-	return m_pConsoleControlSettings;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenNewGameDialog(const char *chapter)
-{
-	if ( !m_hNewGameDialog.Get() )
-	{
-		m_hNewGameDialog = new CNewGameDialog(this, false);
-		PositionDialog( m_hNewGameDialog );
-	}
-
-	if ( chapter )
-	{
-		((CNewGameDialog *)m_hNewGameDialog.Get())->SetSelectedChapter(chapter);
-	}
-
-	((CNewGameDialog *)m_hNewGameDialog.Get())->SetCommentaryMode( false );
-	m_hNewGameDialog->Activate();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenBonusMapsDialog(void)
-{
-	if ( !m_hBonusMapsDialog.Get() )
-	{
-		m_hBonusMapsDialog = new CBonusMapsDialog(this);
-		PositionDialog( m_hBonusMapsDialog );
-	}
-
-	m_hBonusMapsDialog->Activate();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenLoadGameDialog()
-{
-	if ( !m_hLoadGameDialog.Get() )
-	{
-		m_hLoadGameDialog = new CLoadGameDialog(this);
-		PositionDialog( m_hLoadGameDialog );
-	}
-	m_hLoadGameDialog->Activate();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CBaseModPanel::OnOpenSaveGameDialog()
-{
-	if ( !m_hSaveGameDialog.Get() )
-	{
-		m_hSaveGameDialog = new CSaveGameDialog(this);
-		PositionDialog( m_hSaveGameDialog );
-	}
-	m_hSaveGameDialog->Activate();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: moves the game menu button to the right place on the taskbar
-//-----------------------------------------------------------------------------
-void CBaseModPanel::PositionDialog(vgui::PHandle dlg)
-{
-	if (!dlg.Get())
-		return;
-
-	int x, y, ww, wt, wide, tall;
-	vgui::surface()->GetWorkspaceBounds( x, y, ww, wt );
-	dlg->GetSize(wide, tall);
-
-	// Center it, keeping requested size
-	dlg->SetPos(x + ((ww - wide) / 2), y + ((wt - tall) / 2));
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: xbox UI panel that displays button icons and help text for all menus
-//-----------------------------------------------------------------------------
-CFooterPanel::CFooterPanel( Panel *parent, const char *panelName ) : BaseClass( parent, panelName ) 
-{
-	SetVisible( true );
-	SetAlpha( 0 );
-	m_pHelpName = NULL;
-
-	m_pSizingLabel = new vgui::Label( this, "SizingLabel", "" );
-	m_pSizingLabel->SetVisible( false );
-
-	m_nButtonGap = 32;
-	m_nButtonGapDefault = 32;
-	m_ButtonPinRight = 100;
-	m_FooterTall = 80;
-
-	int wide, tall;
-	surface()->GetScreenSize(wide, tall);
-
-	if ( tall <= 480 )
-	{
-		m_FooterTall = 60;
-	}
-
-	m_ButtonOffsetFromTop = 0;
-	m_ButtonSeparator = 4;
-	m_TextAdjust = 0;
-
-	m_bPaintBackground = false;
-	m_bCenterHorizontal = false;
-
-	m_szButtonFont[0] = '\0';
-	m_szTextFont[0] = '\0';
-	m_szFGColor[0] = '\0';
-	m_szBGColor[0] = '\0';
-}
-
-CFooterPanel::~CFooterPanel()
-{
-	SetHelpNameAndReset( NULL );
-
-	delete m_pSizingLabel;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: apply scheme settings
-//-----------------------------------------------------------------------------
-void CFooterPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
-{
-	BaseClass::ApplySchemeSettings( pScheme );
-
-	m_hButtonFont = pScheme->GetFont( ( m_szButtonFont[0] != '\0' ) ? m_szButtonFont : "GameUIButtons" );
-	m_hTextFont = pScheme->GetFont( ( m_szTextFont[0] != '\0' ) ? m_szTextFont : "MenuLarge" );
-
-	SetFgColor( pScheme->GetColor( m_szFGColor, Color( 255, 255, 255, 255 ) ) );
-	SetBgColor( pScheme->GetColor( m_szBGColor, Color( 0, 0, 0, 255 ) ) );
-
-	int x, y, w, h;
-	GetParent()->GetBounds( x, y, w, h );
-	SetBounds( x, h - m_FooterTall, w, m_FooterTall );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: apply settings
-//-----------------------------------------------------------------------------
-void CFooterPanel::ApplySettings( KeyValues *inResourceData )
-{
-	BaseClass::ApplySettings( inResourceData );
-
-	// gap between hints
-	m_nButtonGap = inResourceData->GetInt( "buttongap", 32 );
-	m_nButtonGapDefault = m_nButtonGap;
-	m_ButtonPinRight = inResourceData->GetInt( "button_pin_right", 100 );
-	m_FooterTall = inResourceData->GetInt( "tall", 80 );
-	m_ButtonOffsetFromTop = inResourceData->GetInt( "buttonoffsety", 0 );
-	m_ButtonSeparator = inResourceData->GetInt( "button_separator", 4 );
-	m_TextAdjust = inResourceData->GetInt( "textadjust", 0 );
-
-	m_bCenterHorizontal = ( inResourceData->GetInt( "center", 0 ) == 1 );
-	m_bPaintBackground = ( inResourceData->GetInt( "paintbackground", 0 ) == 1 );
-
-	// fonts for text and button
-	Q_strncpy( m_szTextFont, inResourceData->GetString( "fonttext", "MenuLarge" ), sizeof( m_szTextFont ) );
-	Q_strncpy( m_szButtonFont, inResourceData->GetString( "fontbutton", "GameUIButtons" ), sizeof( m_szButtonFont ) );
-
-	// fg and bg colors
-	Q_strncpy( m_szFGColor, inResourceData->GetString( "fgcolor", "White" ), sizeof( m_szFGColor ) );
-	Q_strncpy( m_szBGColor, inResourceData->GetString( "bgcolor", "Black" ), sizeof( m_szBGColor ) );
-
-	for ( KeyValues *pButton = inResourceData->GetFirstSubKey(); pButton != NULL; pButton = pButton->GetNextKey() )
-	{
-		const char *pName = pButton->GetName();
-
-		if ( !Q_stricmp( pName, "button" ) )
-		{
-			// Add a button to the footer
-			const char *pText = pButton->GetString( "text", "NULL" );
-			const char *pIcon = pButton->GetString( "icon", "NULL" );
-			AddNewButtonLabel( pText, pIcon );
-		}
-	}
-
-	InvalidateLayout( false, true ); // force ApplySchemeSettings to run
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: adds button icons and help text to the footer panel when activating a menu
-//-----------------------------------------------------------------------------
-void CFooterPanel::AddButtonsFromMap( vgui::Frame *pMenu )
-{
-	SetHelpNameAndReset( pMenu->GetName() );
-
-	CControllerMap *pMap = dynamic_cast<CControllerMap*>( pMenu->FindChildByName( "ControllerMap" ) );
-	if ( pMap )
-	{
-		int buttonCt = pMap->NumButtons();
-		for ( int i = 0; i < buttonCt; ++i )
-		{
-			const char *pText = pMap->GetBindingText( i );
-			if ( pText )
-			{
-				AddNewButtonLabel( pText, pMap->GetBindingIcon( i ) );
-			}
-		}
-	}
-}
-
-void CFooterPanel::SetStandardDialogButtons()
-{
-	SetHelpNameAndReset( "Dialog" );
-	AddNewButtonLabel( "#GameUI_Action", "#GameUI_Icons_A_BUTTON" );
-	AddNewButtonLabel( "#GameUI_Close", "#GameUI_Icons_B_BUTTON" );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Caller must tag the button layout. May support reserved names
-// to provide stock help layouts trivially.
-//-----------------------------------------------------------------------------
-void CFooterPanel::SetHelpNameAndReset( const char *pName )
-{
-	if ( m_pHelpName )
-	{
-		free( m_pHelpName );
-		m_pHelpName = NULL;
-	}
-
-	if ( pName )
-	{
-		m_pHelpName = strdup( pName );
-	}
-
-	ClearButtons();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Caller must tag the button layout
-//-----------------------------------------------------------------------------
-const char *CFooterPanel::GetHelpName()
-{
-	return m_pHelpName;
-}
-
-void CFooterPanel::ClearButtons( void )
-{
-	m_ButtonLabels.PurgeAndDeleteElements();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: creates a new button label with icon and text
-//-----------------------------------------------------------------------------
-void CFooterPanel::AddNewButtonLabel( const char *text, const char *icon )
-{
-	ButtonLabel_t *button = new ButtonLabel_t;
-
-	Q_strncpy( button->name, text, MAX_PATH );
-	button->bVisible = true;
-
-	// Button icons are a single character
-	wchar_t *pIcon = g_pVGuiLocalize->Find( icon );
-	if ( pIcon )
-	{
-		button->icon[0] = pIcon[0];
-		button->icon[1] = '\0';
-	}
-	else
-	{
-		button->icon[0] = '\0';
-	}
-
-	// Set the help text
-	wchar_t *pText = g_pVGuiLocalize->Find( text );
-	if ( pText )
-	{
-		wcsncpy( button->text, pText, wcslen( pText ) + 1 );
-	}
-	else
-	{
-		button->text[0] = '\0';
-	}
-
-	m_ButtonLabels.AddToTail( button );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Shows/Hides a button label
-//-----------------------------------------------------------------------------
-void CFooterPanel::ShowButtonLabel( const char *name, bool show )
-{
-	for ( int i = 0; i < m_ButtonLabels.Count(); ++i )
-	{
-		if ( !Q_stricmp( m_ButtonLabels[ i ]->name, name ) )
-		{
-			m_ButtonLabels[ i ]->bVisible = show;
-			break;
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Changes a button's text
-//-----------------------------------------------------------------------------
-void CFooterPanel::SetButtonText( const char *buttonName, const char *text )
-{
-	for ( int i = 0; i < m_ButtonLabels.Count(); ++i )
-	{
-		if ( !Q_stricmp( m_ButtonLabels[ i ]->name, buttonName ) )
-		{
-			wchar_t *wtext = g_pVGuiLocalize->Find( text );
-			if ( text )
-			{
-				wcsncpy( m_ButtonLabels[ i ]->text, wtext, wcslen( wtext ) + 1 );
-			}
-			else
-			{
-				m_ButtonLabels[ i ]->text[ 0 ] = '\0';
-			}
-			break;
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Footer panel background rendering
-//-----------------------------------------------------------------------------
-void CFooterPanel::PaintBackground( void )
-{
-	if ( !m_bPaintBackground )
-		return;
-
-	BaseClass::PaintBackground();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Footer panel rendering
-//-----------------------------------------------------------------------------
-void CFooterPanel::Paint( void )
-{
-	// inset from right edge
-	int wide = GetWide();
-	int right = wide - m_ButtonPinRight;
-
-	// center the text within the button
-	int buttonHeight = vgui::surface()->GetFontTall( m_hButtonFont );
-	int fontHeight = vgui::surface()->GetFontTall( m_hTextFont );
-	int textY = ( buttonHeight - fontHeight )/2 + m_TextAdjust;
-
-	if ( textY < 0 )
-	{
-		textY = 0;
-	}
-
-	int y = m_ButtonOffsetFromTop;
-
-	if ( !m_bCenterHorizontal )
-	{
-		// draw the buttons, right to left
-		int x = right;
-
-		for ( int i = 0; i < m_ButtonLabels.Count(); ++i )
-		{
-			ButtonLabel_t *pButton = m_ButtonLabels[i];
-			if ( !pButton->bVisible )
-				continue;
-
-			// Get the string length
-			m_pSizingLabel->SetFont( m_hTextFont );
-			m_pSizingLabel->SetText( pButton->text );
-			m_pSizingLabel->SizeToContents();
-
-			int iTextWidth = m_pSizingLabel->GetWide();
-
-			if ( iTextWidth == 0 )
-				x += m_nButtonGap;	// There's no text, so remove the gap between buttons
-			else
-				x -= iTextWidth;
-
-			// Draw the string
-			vgui::surface()->DrawSetTextFont( m_hTextFont );
-			vgui::surface()->DrawSetTextColor( GetFgColor() );
-			vgui::surface()->DrawSetTextPos( x, y + textY );
-			vgui::surface()->DrawPrintText( pButton->text, wcslen( pButton->text ) );
-
-			// Draw the button
-			// back up button width and a little extra to leave a gap between button and text
-			x -= ( vgui::surface()->GetCharacterWidth( m_hButtonFont, pButton->icon[0] ) + m_ButtonSeparator );
-			vgui::surface()->DrawSetTextFont( m_hButtonFont );
-			vgui::surface()->DrawSetTextColor( 255, 255, 255, 255 );
-			vgui::surface()->DrawSetTextPos( x, y );
-			vgui::surface()->DrawPrintText( pButton->icon, 1 );
-
-			// back up to next string
-			x -= m_nButtonGap;
-		}
-	}
-	else
-	{
-		// center the buttons (as a group)
-		int x = wide / 2;
-		int totalWidth = 0;
-		int i = 0;
-		int nButtonCount = 0;
-
-		// need to loop through and figure out how wide our buttons and text are (with gaps between) so we can offset from the center
-		for ( i = 0; i < m_ButtonLabels.Count(); ++i )
-		{
-			ButtonLabel_t *pButton = m_ButtonLabels[i];
-			if ( !pButton->bVisible )
-				continue;
-
-			// Get the string length
-			m_pSizingLabel->SetFont( m_hTextFont );
-			m_pSizingLabel->SetText( pButton->text );
-			m_pSizingLabel->SizeToContents();
-
-			totalWidth += vgui::surface()->GetCharacterWidth( m_hButtonFont, pButton->icon[0] );
-			totalWidth += m_ButtonSeparator;
-			totalWidth += m_pSizingLabel->GetWide();
-
-			nButtonCount++; // keep track of how many active buttons we'll be drawing
-		}
-
-		totalWidth += ( nButtonCount - 1 ) * m_nButtonGap; // add in the gaps between the buttons
-		x -= ( totalWidth / 2 );
-
-		for ( i = 0; i < m_ButtonLabels.Count(); ++i )
-		{
-			ButtonLabel_t *pButton = m_ButtonLabels[i];
-			if ( !pButton->bVisible )
-				continue;
-
-			// Get the string length
-			m_pSizingLabel->SetFont( m_hTextFont );
-			m_pSizingLabel->SetText( pButton->text );
-			m_pSizingLabel->SizeToContents();
-
-			int iTextWidth = m_pSizingLabel->GetWide();
-
-			// Draw the icon
-			vgui::surface()->DrawSetTextFont( m_hButtonFont );
-			vgui::surface()->DrawSetTextColor( 255, 255, 255, 255 );
-			vgui::surface()->DrawSetTextPos( x, y );
-			vgui::surface()->DrawPrintText( pButton->icon, 1 );
-			x += vgui::surface()->GetCharacterWidth( m_hButtonFont, pButton->icon[0] ) + m_ButtonSeparator;
-
-			// Draw the string
-			vgui::surface()->DrawSetTextFont( m_hTextFont );
-			vgui::surface()->DrawSetTextColor( GetFgColor() );
-			vgui::surface()->DrawSetTextPos( x, y + textY );
-			vgui::surface()->DrawPrintText( pButton->text, wcslen( pButton->text ) );
-			
-			x += iTextWidth + m_nButtonGap;
-		}
-	}
-}	
-
-DECLARE_BUILD_FACTORY( CFooterPanel );
-
-// X360TBD: Move into a separate module when completed
-/*CMessageDialogHandler::CMessageDialogHandler()
-{
-	m_iDialogStackTop = -1;
-}
-void CMessageDialogHandler::ShowMessageDialog( int nType, vgui::Panel *pOwner )
-{
-	int iSimpleFrame = 0;
-	if ( ModInfo().IsSinglePlayerOnly() )
-	{
-		iSimpleFrame = MD_SIMPLEFRAME;
-	}
-
-	switch( nType )
-	{
-	case MD_SEARCHING_FOR_GAMES:
-		CreateMessageDialog( MD_CANCEL|MD_RESTRICTPAINT,
-							NULL, 
-							"#TF_Dlg_SearchingForGames", 
-							NULL,
-							"CancelOperation",
-							pOwner,
-							true ); 
-		break;
-
-	case MD_CREATING_GAME:
-		CreateMessageDialog( MD_RESTRICTPAINT,
-							NULL, 
-							"#TF_Dlg_CreatingGame", 
-							NULL,
-							NULL,
-							pOwner,
-							true ); 
-		break;
-
-	case MD_SESSION_SEARCH_FAILED:
-		CreateMessageDialog( MD_YESNO|MD_RESTRICTPAINT, 
-							NULL, 
-							"#TF_Dlg_NoGamesFound", 
-							"ShowSessionOptionsDialog",
-							"ReturnToMainMenu",
-							pOwner ); 
-		break;
-
-	case MD_SESSION_CREATE_FAILED:
-		CreateMessageDialog( MD_OK, 
-							NULL, 
-							"#TF_Dlg_CreateFailed", 
-							"ReturnToMainMenu", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_SESSION_CONNECTING:
-		CreateMessageDialog( 0, 
-							NULL, 
-							"#TF_Dlg_Connecting", 
-							NULL, 
-							NULL,
-							pOwner,
-							true );
-		break;
-
-	case MD_SESSION_CONNECT_NOTAVAILABLE:
-		CreateMessageDialog( MD_OK, 
-							NULL, 
-							"#TF_Dlg_JoinRefused", 
-							"ReturnToMainMenu", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_SESSION_CONNECT_SESSIONFULL:
-		CreateMessageDialog( MD_OK, 
-							NULL, 
-							"#TF_Dlg_GameFull", 
-							"ReturnToMainMenu", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_SESSION_CONNECT_FAILED:
-		CreateMessageDialog( MD_OK, 
-							NULL, 
-							"#TF_Dlg_JoinFailed", 
-							"ReturnToMainMenu", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_LOST_HOST:
-		CreateMessageDialog( MD_OK|MD_RESTRICTPAINT, 
-							NULL, 
-							"#TF_Dlg_LostHost", 
-							"ReturnToMainMenu", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_LOST_SERVER:
-		CreateMessageDialog( MD_OK|MD_RESTRICTPAINT, 
-							NULL, 
-							"#TF_Dlg_LostServer", 
-							"ReturnToMainMenu", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_MODIFYING_SESSION:
-		CreateMessageDialog( MD_RESTRICTPAINT, 
-							NULL, 
-							"#TF_Dlg_ModifyingSession", 
-							NULL, 
-							NULL,
-							pOwner,
-							true );
-		break;
-
-	case MD_SAVE_BEFORE_QUIT:
-		CreateMessageDialog( MD_YESNO|iSimpleFrame|MD_RESTRICTPAINT, 
-							"#GameUI_QuitConfirmationTitle", 
-							"#GameUI_Console_QuitWarning", 
-							"QuitNoConfirm", 
-							"CloseQuitDialog_OpenMainMenu",
-							pOwner );
-		break;
-
-	case MD_QUIT_CONFIRMATION:
-		CreateMessageDialog( MD_YESNO|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_QuitConfirmationTitle", 
-							 "#GameUI_QuitConfirmationText", 
-							 "QuitNoConfirm", 
-							 "CloseQuitDialog_OpenMainMenu",
-							 pOwner );
-		break;
-
-	case MD_QUIT_CONFIRMATION_TF:
-		CreateMessageDialog( MD_YESNO|MD_RESTRICTPAINT, 
-							 "#GameUI_QuitConfirmationTitle", 
-							 "#GameUI_QuitConfirmationText", 
-							 "QuitNoConfirm", 
-							 "CloseQuitDialog_OpenMatchmakingMenu",
-							 pOwner );
-		break;
-
-	case MD_DISCONNECT_CONFIRMATION:
-		CreateMessageDialog( MD_YESNO|MD_RESTRICTPAINT, 
-							"", 
-							"#GameUI_DisconnectConfirmationText", 
-							"DisconnectNoConfirm", 
-							"close_dialog",
-							pOwner );
-		break;
-
-	case MD_DISCONNECT_CONFIRMATION_HOST:
-		CreateMessageDialog( MD_YESNO|MD_RESTRICTPAINT, 
-							"", 
-							"#GameUI_DisconnectHostConfirmationText", 
-							"DisconnectNoConfirm", 
-							"close_dialog",
-							pOwner );
-		break;
-
-	case MD_KICK_CONFIRMATION:
-		CreateMessageDialog( MD_YESNO, 
-							"", 
-							"#TF_Dlg_ConfirmKick", 
-							"KickPlayer", 
-							"close_dialog",
-							pOwner );
-		break;
-
-	case MD_CLIENT_KICKED:
-		CreateMessageDialog( MD_OK|MD_RESTRICTPAINT, 
-							"", 
-							"#TF_Dlg_ClientKicked", 
-							"close_dialog", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_EXIT_SESSION_CONFIRMATION:
-		CreateMessageDialog( MD_YESNO, 
-							"", 
-							"#TF_Dlg_ExitSessionText", 
-							"ReturnToMainMenu", 
-							"close_dialog",
-							pOwner );
-		break;
-
-	case MD_STORAGE_DEVICES_NEEDED:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_COMMANDAFTERCLOSE|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_Console_StorageRemovedTitle", 
-							 "#GameUI_Console_StorageNeededBody", 
-							 "ShowDeviceSelector", 
-							 "QuitNoConfirm",
-							 pOwner );
-		break;
-
-	case MD_STORAGE_DEVICES_CHANGED:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_COMMANDAFTERCLOSE|iSimpleFrame|MD_RESTRICTPAINT, 
-							"#GameUI_Console_StorageRemovedTitle", 
-							"#GameUI_Console_StorageRemovedBody", 
-							"ShowDeviceSelector", 
-							"clear_storage_deviceID",
-							pOwner );
-		break;
-
-	case MD_STORAGE_DEVICES_TOO_FULL:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_COMMANDAFTERCLOSE|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_Console_StorageTooFullTitle", 
-							 "#GameUI_Console_StorageTooFullBody", 
-							 "ShowDeviceSelector", 
-							 "StorageDeviceDenied",
-							 pOwner );
-		break;
-
-	case MD_PROMPT_STORAGE_DEVICE:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_COMMANDAFTERCLOSE|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_Console_NoStorageDeviceSelectedTitle", 
-							 "#GameUI_Console_NoStorageDeviceSelectedBody", 
-							 "ShowDeviceSelector", 
-							 "StorageDeviceDenied",
-							 pOwner );
-		break;
-
-	case MD_PROMPT_STORAGE_DEVICE_REQUIRED:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_COMMANDAFTERCLOSE|MD_SIMPLEFRAME, 
-							"#GameUI_Console_NoStorageDeviceSelectedTitle", 
-							"#GameUI_Console_StorageDeviceRequiredBody", 
-							"ShowDeviceSelector", 
-							"RequiredStorageDenied",
-							pOwner );
-		break;
-
-	case MD_PROMPT_SIGNIN:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_COMMANDAFTERCLOSE|iSimpleFrame, 
-							 "#GameUI_Console_NoUserProfileSelectedTitle", 
-							 "#GameUI_Console_NoUserProfileSelectedBody", 
-							 "ShowSignInUI", 
-							 "SignInDenied",
-							 pOwner );
-		break;
-
-	case MD_PROMPT_SIGNIN_REQUIRED:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_COMMANDAFTERCLOSE|iSimpleFrame, 
-							"#GameUI_Console_NoUserProfileSelectedTitle", 
-							"#GameUI_Console_UserProfileRequiredBody", 
-							"ShowSignInUI", 
-							"RequiredSignInDenied",
-							pOwner );
-		break;
-
-	case MD_NOT_ONLINE_ENABLED:
-		CreateMessageDialog( MD_YESNO|MD_WARNING, 
-							"", 
-							"#TF_Dlg_NotOnlineEnabled", 
-							"ShowSigninUI", 
-							"close_dialog",
-							pOwner );
-		break;
-
-	case MD_NOT_ONLINE_SIGNEDIN:
-		CreateMessageDialog( MD_YESNO|MD_WARNING, 
-							"", 
-							"#TF_Dlg_NotOnlineSignedIn", 
-							"ShowSigninUI", 
-							"close_dialog",
-							pOwner );
-		break;
-
-	case MD_DEFAULT_CONTROLS_CONFIRM:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_RestoreDefaults", 
-							 "#GameUI_ControllerSettingsText", 
-							 "DefaultControls", 
-							 "close_dialog",
-							 pOwner );
-		break;
-
-	case MD_AUTOSAVE_EXPLANATION:
-		CreateMessageDialog( MD_OK|MD_WARNING|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_ConfirmNewGame_Title", 
-							 "#GameUI_AutoSave_Console_Explanation", 
-							 "StartNewGameNoCommentaryExplanation", 
-							 NULL,
-							 pOwner );
-		break;
-
-	case MD_COMMENTARY_EXPLANATION:
-		CreateMessageDialog( MD_OK|MD_WARNING|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_CommentaryDialogTitle", 
-							 "#GAMEUI_Commentary_Console_Explanation", 
-							 "StartNewGameNoCommentaryExplanation", 
-							 NULL,
-							 pOwner );
-		break;
-
-	case MD_COMMENTARY_EXPLANATION_MULTI:
-		CreateMessageDialog( MD_OK|MD_WARNING, 
-							 "#GameUI_CommentaryDialogTitle", 
-							 "#GAMEUI_Commentary_Console_Explanation", 
-							 "StartNewGameNoCommentaryExplanation", 
-							 NULL,
-							 pOwner );
-		break;
-
-	case MD_COMMENTARY_CHAPTER_UNLOCK_EXPLANATION:
-		CreateMessageDialog( MD_OK|MD_WARNING|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_CommentaryDialogTitle", 
-							 "#GameUI_CommentaryUnlock", 
-							 "close_dialog", 
-							 NULL,
-							 pOwner );
-		break;
-		
-	case MD_SAVE_BEFORE_LANGUAGE_CHANGE:
-		CreateMessageDialog( MD_YESNO|MD_WARNING|MD_SIMPLEFRAME|MD_COMMANDAFTERCLOSE|MD_RESTRICTPAINT, 
-							 "#GameUI_ChangeLanguageRestart_Title", 
-							 "#GameUI_ChangeLanguageRestart_Info", 
-							 "AcceptVocalsLanguageChange", 
-							 "CancelVocalsLanguageChange",
-							 pOwner );
-
-	case MD_SAVE_BEFORE_NEW_GAME:
-		CreateMessageDialog( MD_OKCANCEL|MD_WARNING|iSimpleFrame|MD_COMMANDAFTERCLOSE|MD_RESTRICTPAINT, 
-							 "#GameUI_ConfirmNewGame_Title", 
-							 "#GameUI_NewGameWarning", 
-							 "StartNewGame", 
-							 "close_dialog",
-							 pOwner );
-		break;
-
-	case MD_SAVE_BEFORE_LOAD:
-		CreateMessageDialog( MD_OKCANCEL|MD_WARNING|iSimpleFrame|MD_COMMANDAFTERCLOSE|MD_RESTRICTPAINT, 
-							 "#GameUI_ConfirmLoadGame_Title", 
-							 "#GameUI_LoadWarning", 
-							 "LoadGame", 
-							 "LoadGameCancelled",
-							 pOwner );
-		break;
-
-	case MD_DELETE_SAVE_CONFIRM:
-		CreateMessageDialog( MD_OKCANCEL|MD_WARNING|iSimpleFrame|MD_COMMANDAFTERCLOSE, 
-							 "#GameUI_ConfirmDeleteSaveGame_Title", 
-							 "#GameUI_ConfirmDeleteSaveGame_Info", 
-							 "DeleteGame", 
-							 "DeleteGameCancelled",
-							 pOwner );
-		break;
-
-	case MD_SAVE_OVERWRITE:
-		CreateMessageDialog( MD_OKCANCEL|MD_WARNING|iSimpleFrame|MD_COMMANDAFTERCLOSE, 
-							 "#GameUI_ConfirmOverwriteSaveGame_Title", 
-							 "#GameUI_ConfirmOverwriteSaveGame_Info", 
-							 "SaveGame", 
-							 "OverwriteGameCancelled",
-							 pOwner );
-		break;
-
-	case MD_SAVING_WARNING:
-		CreateMessageDialog( MD_WARNING|iSimpleFrame|MD_COMMANDONFORCECLOSE, 
-							 "",
-							 "#GameUI_SavingWarning", 
-							 "SaveSuccess", 
-							 NULL,
-							 pOwner,
-							 true);
-		break;
-
-	case MD_SAVE_COMPLETE:
-		CreateMessageDialog( MD_OK|iSimpleFrame|MD_COMMANDAFTERCLOSE, 
-							 "#GameUI_ConfirmOverwriteSaveGame_Title", 
-							 "#GameUI_GameSaved", 
-							 "CloseAndSelectResume", 
-							 NULL,
-							 pOwner );
-		break;
-
-	case MD_LOAD_FAILED_WARNING:
-		CreateMessageDialog( MD_OK |MD_WARNING|iSimpleFrame, 
-			"#GameUI_LoadFailed", 
-			"#GameUI_LoadFailed_Description", 
-			"close_dialog", 
-			NULL,
-			pOwner );
-		break;
-
-	case MD_OPTION_CHANGE_FROM_X360_DASHBOARD:
-		CreateMessageDialog( MD_OK|iSimpleFrame|MD_RESTRICTPAINT, 
-							 "#GameUI_SettingChangeFromX360Dashboard_Title", 
-							 "#GameUI_SettingChangeFromX360Dashboard_Info", 
-							 "close_dialog", 
-							 NULL,
-							 pOwner );
-		break;
-
-	case MD_STANDARD_SAMPLE:
-		CreateMessageDialog( MD_OK, 
-							"Standard Dialog", 
-							"This is a standard dialog", 
-							"close_dialog", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_WARNING_SAMPLE:
-		CreateMessageDialog( MD_OK | MD_WARNING,
-							"#GameUI_Dialog_Warning", 
-							"This is a warning dialog", 
-							"close_dialog", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_ERROR_SAMPLE:
-		CreateMessageDialog( MD_OK | MD_ERROR, 
-							"Error Dialog", 
-							"This is an error dialog", 
-							"close_dialog", 
-							NULL,
-							pOwner );
-		break;
-
-	case MD_STORAGE_DEVICES_CORRUPT:
-		CreateMessageDialog( MD_OK | MD_WARNING | iSimpleFrame | MD_RESTRICTPAINT,
-			"", 
-			"#GameUI_Console_FileCorrupt", 
-			"close_dialog", 
-			NULL,
-			pOwner );
-		break;
-
-	case MD_CHECKING_STORAGE_DEVICE:
-		CreateMessageDialog( iSimpleFrame | MD_RESTRICTPAINT,
-			NULL, 
-			"#GameUI_Dlg_CheckingStorageDevice",
-			NULL,
-			NULL,
-			pOwner,
-			true ); 
-		break;
-
-	default:
-		break;
-	}
-}
-
-ConVar vgui_message_dialog_modal("vgui_message_dialog_modal", "1", FCVAR_ARCHIVE);
-
-void CMessageDialogHandler::CloseAllMessageDialogs()
-{
-	for ( int i = 0; i < MAX_MESSAGE_DIALOGS; ++i )
-	{
-		CMessageDialog *pDlg = m_hMessageDialogs[i];
-		if ( pDlg )
-		{
-			vgui::surface()->RestrictPaintToSinglePanel(NULL);
-			if ( vgui_message_dialog_modal.GetBool() )
-			{
-				vgui::input()->ReleaseAppModalSurface();
-			}
-
-			pDlg->Close();
-			m_hMessageDialogs[i] = NULL;
-		}
-	}
-}
-
-void CMessageDialogHandler::CloseMessageDialog( const uint nType )
-{
-	int nStackIdx = 0;
-	if ( nType & MD_WARNING )
-	{
-		nStackIdx = DIALOG_STACK_IDX_WARNING;
-	}
-	else if ( nType & MD_ERROR )
-	{
-		nStackIdx = DIALOG_STACK_IDX_ERROR;
-	}
-
-	CMessageDialog *pDlg = m_hMessageDialogs[nStackIdx];
-	if ( pDlg )
-	{
-		vgui::surface()->RestrictPaintToSinglePanel(NULL);
-		if ( vgui_message_dialog_modal.GetBool() )
-		{
-			vgui::input()->ReleaseAppModalSurface();
-		}
-
-		pDlg->Close();
-		m_hMessageDialogs[nStackIdx] = NULL;
-	}
-}
-
-void CMessageDialogHandler::CreateMessageDialog( const uint nType, const char *pTitle, const char *pMsg, const char *pCmdA, const char *pCmdB, vgui::Panel *pCreator, bool bShowActivity /*= false*/ /*)
-{
-	int nStackIdx = 0;
-	if ( nType & MD_WARNING )
-	{
-		nStackIdx = DIALOG_STACK_IDX_WARNING;
-	}
-	else if ( nType & MD_ERROR )
-	{
-		nStackIdx = DIALOG_STACK_IDX_ERROR;
-	}
-
-	// Can only show one dialog of each type at a time
-	if ( m_hMessageDialogs[nStackIdx].Get() )
-	{
-		Warning( "Tried to create two dialogs of type %d\n", nStackIdx );
-		return;
-	}
-
-	// Show the new dialog
-	m_hMessageDialogs[nStackIdx] = new CMessageDialog( BaseModUI::BasePanel(), nType, pTitle, pMsg, pCmdA, pCmdB, pCreator, bShowActivity );
-
-	
-
-	//m_hMessageDialogs[nStackIdx]->SetControlSettingsKeys( BasePanel()->GetConsoleControlSettings()->FindKey( "MessageDialog.res" ) );
-
-	if ( nType & MD_RESTRICTPAINT )
-	{
-		vgui::surface()->RestrictPaintToSinglePanel( m_hMessageDialogs[nStackIdx]->GetVPanel() );
-	}
-
-	ActivateMessageDialog( nStackIdx );	
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Activate a new message dialog
-//-----------------------------------------------------------------------------
-void CMessageDialogHandler::ActivateMessageDialog( int nStackIdx )
-{
-	int x, y, wide, tall;
-	vgui::surface()->GetWorkspaceBounds( x, y, wide, tall );
-	PositionDialog( m_hMessageDialogs[nStackIdx], wide, tall );
-
-	uint nType = m_hMessageDialogs[nStackIdx]->GetType();
-	if ( nType & MD_WARNING )
-	{
-		m_hMessageDialogs[nStackIdx]->SetZPos( 75 );
-	}
-	else if ( nType & MD_ERROR )
-	{
-		m_hMessageDialogs[nStackIdx]->SetZPos( 100 );
-	}
-
-	// Make sure the topmost item on the stack still has focus
-	int idx = MAX_MESSAGE_DIALOGS - 1;
-	for ( idx; idx >= nStackIdx; --idx )
-	{
-		CMessageDialog *pDialog = m_hMessageDialogs[idx];
-		if ( pDialog )
-		{
-			pDialog->Activate();
-			if ( vgui_message_dialog_modal.GetBool() )
-			{
-				vgui::input()->SetAppModalSurface( pDialog->GetVPanel() );
-			}
-			m_iDialogStackTop = idx;
-			break;
-		}
-	}
-}
-
-void CMessageDialogHandler::PositionDialogs( int wide, int tall )
-{
-	for ( int i = 0; i < MAX_MESSAGE_DIALOGS; ++i )
-	{
-		if ( m_hMessageDialogs[i].Get() )
-		{
-			PositionDialog( m_hMessageDialogs[i], wide, tall );
-		}
-	}
-}
-
-void CMessageDialogHandler::PositionDialog( vgui::PHandle dlg, int wide, int tall )
-{
-	int w, t;
-	dlg->GetSize(w, t);
-	dlg->SetPos( (wide - w) / 2, (tall - t) / 2 );
-}*/
-
-static char *g_rgValidCommands[] =
-{
-	"OpenGameMenu",
-	"OpenPlayerListDialog",
-	"OpenNewGameDialog",
-	"OpenLoadGameDialog",
-	"OpenSaveGameDialog",
-	"OpenCustomMapsDialog",
-	//"OpenOptionsDialog",
-	"OpenBenchmarkDialog",
-	"OpenServerBrowser",
-	"OpenFriendsDialog",
-	"OpenLoadDemoDialog",
-	"OpenCreateMultiplayerGameDialog",
-	"OpenChangeGameDialog",
-	"OpenLoadCommentaryDialog",
-	"Quit",
-	"QuitNoConfirm",
-	"ResumeGame",
-	"Disconnect",
-};
-
-static void CC_GameMenuCommand(const CCommand &args)
-{
-	int c = args.ArgC();
-	if (c < 2)
-	{
-		Msg("Usage:  gamemenucommand <commandname>\n");
-		return;
-	}
-
-	if (!g_pBasePanel)
-	{
-		return;
-	}
-
-	vgui::ivgui()->PostMessage(g_pBasePanel->GetVPanel(), new KeyValues("Command", "command", args[1]), NULL);
-}
-// This is defined in ulstring.h at the bottom in 2013 MP
-/*
-static bool UtlStringLessFunc(const CUtlString &lhs, const CUtlString &rhs)
-{
-	return Q_stricmp(lhs.String(), rhs.String()) < 0;
-}*/
-static int CC_GameMenuCompletionFunc(char const *partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
-{
-	char const *cmdname = "gamemenucommand";
-
-	char *substring = (char *)partial;
-	if (Q_strstr(partial, cmdname))
-	{
-		substring = (char *)partial + strlen(cmdname) + 1;
-	}
-
-	int checklen = Q_strlen(substring);
-
-	CUtlRBTree< CUtlString > symbols(0, 0, UtlStringLessFunc);
-
-	int i;
-	int c = ARRAYSIZE(g_rgValidCommands);
-	for (i = 0; i < c; ++i)
-	{
-		if (Q_strnicmp(g_rgValidCommands[i], substring, checklen))
-			continue;
-
-		CUtlString str;
-		str = g_rgValidCommands[i];
-
-		symbols.Insert(str);
-
-		// Too many
-		if (symbols.Count() >= COMMAND_COMPLETION_MAXITEMS)
-			break;
-	}
-
-	// Now fill in the results
-	int slot = 0;
-	for (i = symbols.FirstInorder(); i != symbols.InvalidIndex(); i = symbols.NextInorder(i))
-	{
-		char const *name = symbols[i].String();
-
-		char buf[512];
-		Q_strncpy(buf, name, sizeof(buf));
-		Q_strlower(buf);
-
-		Q_snprintf(commands[slot++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s",
-			cmdname, buf);
-	}
-
-	return slot;
-}
-
-static ConCommand gamemenucommand("gamemenucommand", CC_GameMenuCommand, "Issue game menu command.", 0, CC_GameMenuCompletionFunc);

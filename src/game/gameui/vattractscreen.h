@@ -29,7 +29,7 @@ public:
 	}
 };
 
-class CAttractScreen : public CBaseModFrame
+class CAttractScreen : public CBaseModFrame, public IMatchEventsSink
 {
 	DECLARE_CLASS_SIMPLE( CAttractScreen, CBaseModFrame );
 

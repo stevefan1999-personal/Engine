@@ -4,7 +4,6 @@
 //
 //=====================================================================================//
 
-#include "cbase.h"
 #include "VHybridButton.h"
 #include "basemodpanel.h"
 #include "VFooterPanel.h"
@@ -40,7 +39,7 @@ void Demo_DisableButton( Button *pButton )
 		pHybridButton->SetEnabled( false );
 
 		char szTooltip[512];
-		wchar_t *wUnicode = g_pVGuiLocalize->Find( "#L4D360UI_MainMenu_DemoVersion" );
+		wchar_t *wUnicode = g_pVGuiLocalize->Find( "#GameUI_MainMenu_DemoVersion" );
 		if ( !wUnicode )
 			wUnicode = L"";
 
@@ -59,7 +58,7 @@ void Dlc1_DisableButton( Button *pButton )
 		pHybridButton->SetEnabled( false );
 
 		char szTooltip[512];
-		wchar_t *wUnicode = g_pVGuiLocalize->Find( "#L4D360UI_DLC1_NotInstalled" );
+		wchar_t *wUnicode = g_pVGuiLocalize->Find( "#GameUI_DLC1_NotInstalled" );
 
 		if ( !wUnicode )
 			wUnicode = L"";
@@ -91,8 +90,7 @@ BaseModUI::BaseModHybridButton::BaseModHybridButton( Panel *parent, const char *
 {
 	SetPaintBorderEnabled( false );
 	SetPaintBackgroundEnabled( false );
-	//SetContentAlignment( a_northwest );
-	SetContentAlignment( a_center );
+	SetContentAlignment( a_northwest );
 	SetClosed();
 	SetButtonActivationType( ACTIVATE_ONRELEASED );
 	SetConsoleStylePanel( true );
@@ -111,14 +109,13 @@ BaseModUI::BaseModHybridButton::BaseModHybridButton( Panel *parent, const char *
 	m_hSelectionBlurFont = 0;
 
 	m_originalTall = 0;
-	//m_textInsetX = 0;
-	//m_textInsetY = 0;
+	m_textInsetX = 0;
+	m_textInsetY = 0;
 
 	m_iSelectedArrow = -1;
 	m_iUnselectedArrow = -1;
 
 	m_nWideAtOpen = 0;
-	//m_nWideAtOpen = ( GetWide() - GetWideAtOpen() );
 }
 
 BaseModUI::BaseModHybridButton::BaseModHybridButton( Panel *parent, const char *panelName, const wchar_t *text, Panel *pActionSignalTarget, const char *pCmd )
@@ -126,8 +123,7 @@ BaseModUI::BaseModHybridButton::BaseModHybridButton( Panel *parent, const char *
 {
 	SetPaintBorderEnabled( false );
 	SetPaintBackgroundEnabled( false );
-	//SetContentAlignment( a_northwest );
-	SetContentAlignment( a_center );
+	SetContentAlignment( a_northwest );
 	SetClosed();
 	SetButtonActivationType( ACTIVATE_ONRELEASED );
 
@@ -144,8 +140,8 @@ BaseModUI::BaseModHybridButton::BaseModHybridButton( Panel *parent, const char *
 	m_hSelectionBlurFont = 0;
 
 	m_originalTall = 0;
-	//m_textInsetX = 0;
-	//m_textInsetY = 0;
+	m_textInsetX = 0;
+	m_textInsetY = 0;
 
 	m_iSelectedArrow = -1;
 	m_iUnselectedArrow = -1;
@@ -330,10 +326,10 @@ void BaseModHybridButton::SetHelpText( const char* tooltip, bool enabled )
 	}
 
 	// if we have the focus update the footer
-	/*if ( HasFocus() )
+	if ( HasFocus() )
 	{
 		UpdateFooterHelpText();
-	}*/
+	}
 }
 
 // 0 = Deprecated CA buttons
@@ -345,7 +341,6 @@ void BaseModHybridButton::PaintButtonEx()
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme( GetScheme() );
 	Color blotchColor = pScheme->GetColor( "HybridButton.BlotchColor", Color( 0, 0, 0, 255 ) );
 	Color borderColor = pScheme->GetColor( "HybridButton.BorderColor", Color( 0, 0, 0, 255 ) );
-	Color bgColor = pScheme->GetColor( "HybridButton.BGColor", Color( 0, 0, 0, 0 ) );
 
 	int x, y;
 	int wide, tall;
@@ -364,9 +359,7 @@ void BaseModHybridButton::PaintButtonEx()
 
 	if ( ( m_nStyle == BUTTON_DROPDOWN || m_nStyle == BUTTON_GAMEMODE ) && GetCurrentState() == Open && m_nWideAtOpen )
 	{
-		//wide = m_nWideAtOpen;
-		wide = ( GetWide() - m_nWideAtOpen );
-		//wide = ( GetWide() - m_nWideAtOpen + ( vgui::scheme()->GetProportionalScaledValue( 1 ) / 2 ) );
+		wide = m_nWideAtOpen;
 	}
 
 	bool bAnimateGlow = false;
@@ -382,18 +375,16 @@ void BaseModHybridButton::PaintButtonEx()
 			if ( m_nStyle == BUTTON_RED || m_nStyle == BUTTON_REDMAIN )
 			{
 				//col.SetColor( 0, 128, 128, 255 );
-				col.SetColor( 255, 155, 0, 255 );
+				col.SetColor( 169, 213, 255, 255 );
 			}
 			else if ( m_nStyle == BUTTON_ALIENSWARMMENUBUTTON || m_nStyle == BUTTON_ALIENSWARMMENUBUTTONSMALL )
 			{
-				//col.SetColor( 135, 170, 193, 255 );
-				pScheme->GetColor( "MainMenuButton.TextColor", Color( 135, 170, 193, 255 ) );
+				col.SetColor( 135, 170, 193, 255 );
 			}
 			else
 			{
 				//col.SetColor( 125, 125, 125, 255 );
-				//col.SetColor( 83, 148, 192, 255 );
-				col.SetColor( 170, 170, 170, 255 );
+				col.SetColor( 83, 148, 192, 255 );
 			}
 			break;
 		case Disabled:
@@ -406,20 +397,20 @@ void BaseModHybridButton::PaintButtonEx()
 		case FocusDisabled:
 			col.SetColor( 182, 189, 194, 255 );
 			bDrawText = false;
-			bDrawGlow = false; //true;
+			bDrawGlow = true;
 			break;
 		case Open:
 			// flyout menu is attached
 			//col.SetColor( 200, 200, 200, 255 );
 			col.SetColor( 169, 213, 255, 255 );
-			bDrawGlow = false; //true;
+			bDrawGlow = true;
 			bDrawCursor = true;
 			break;
 		case Focus:
 			// active item
 			col.SetColor( 255, 255, 255, 255 );
-			bDrawGlow = false; //true;
-			bAnimateGlow = false; //true;
+			bDrawGlow = true;
+			bAnimateGlow = true;
 			if ( m_nStyle == BUTTON_SIMPLE ||
 				 m_nStyle == BUTTON_DROPDOWN ||
 				 m_nStyle == BUTTON_DIALOG ||
@@ -441,19 +432,11 @@ void BaseModHybridButton::PaintButtonEx()
 	textTall = clamp( textTall, 0, tall - m_textInsetX * 2 );
 
 	int textInsetX = m_textInsetX;
-	/*if ( m_nStyle == BUTTON_DIALOG )
+	if ( m_nStyle == BUTTON_DIALOG )
 	{
 		// dialog buttons are centered
 		textInsetX = ( wide - textWide ) / 2;
-	}*/
-
-	/*if ( m_nStyle == BUTTON_FLYOUTITEM && ".TextCenter" )
-	{
-		// i HATE that this is forced
-		textInsetX = ( wide - textWide ) / 2;
-	}*/
-
-	//( GetWide() / 2 )
+	}
 
 	if ( FlyoutMenu::GetActiveMenu() && FlyoutMenu::GetActiveMenu()->GetNavFrom() != this )
 	{
@@ -462,54 +445,55 @@ void BaseModHybridButton::PaintButtonEx()
 
 	if ( bDrawCursor )
 	{
-		// This is drawn when you hover over the button of a drop down
-		// TODO: move into a resource file
 		// draw backing rectangle
-		/*if ( curState == Open )
+		if ( curState == Open )
 		{
 			surface()->DrawSetColor( Color( 0, 0, 0, 255 ) );
-			surface()->DrawFilledRect( 0, 0, wide, tall );
-		}*/
+			surface()->DrawFilledRectFade( x, y, x+wide, y+tall, 0, 255, true );
+		}
 
 		// draw blotch
-		//surface()->DrawSetColor( blotchColor );
-		surface()->DrawSetColor( pScheme->GetColor( "DropDownButton.BlotchColor", Color( 32, 32, 32, 128 ) ) );
-		/*if ( m_nStyle == BUTTON_DIALOG )
+		surface()->DrawSetColor( blotchColor );
+		if ( m_nStyle == BUTTON_DIALOG )
 		{
-			surface()->DrawFilledRect( 0, 0, wide, tall );
+			int blotchWide = textWide;
+			int blotchX = x + textInsetX;
+			surface()->DrawFilledRectFade( blotchX, y, blotchX + 0.50f * blotchWide, y+tall, 0, 150, true );
+			surface()->DrawFilledRectFade( blotchX + 0.50f * blotchWide, y, blotchX + blotchWide, y+tall, 150, 0, true );
 		}
 		else
 		{
-			surface()->DrawFilledRect( 0, 0, wide, tall );
-		}*/
-
-		surface()->DrawFilledRect( 0, 0, wide, tall );
+			int blotchWide = textWide + vgui::scheme()->GetProportionalScaledValueEx( GetScheme(), 40 );
+			int blotchX = x + textInsetX;
+			surface()->DrawFilledRectFade( blotchX, y, blotchX + 0.25f * blotchWide, y+tall, 0, 150, true );
+			surface()->DrawFilledRectFade( blotchX + 0.25f * blotchWide, y, blotchX + blotchWide, y+tall, 150, 0, true );
+		}
 
 		// draw border lines
-		//surface()->DrawSetColor( borderColor );
+		surface()->DrawSetColor( borderColor );
 		if ( curState == Open )
 		{
 			FlyoutMenu *pActiveFlyout = FlyoutMenu::GetActiveMenu();
 			BaseModHybridButton *button = dynamic_cast< BaseModHybridButton* >( pActiveFlyout ? pActiveFlyout->GetNavFrom() : NULL );
 			if ( pActiveFlyout && pActiveFlyout->GetOriginalTall() == 0 && button && button == this )
 			{
-				//surface()->DrawFilledRectFade( x, y, x + wide, y+2, 255, 0, true );
+				surface()->DrawFilledRectFade( x, y, x + wide, y+2, 255, 0, true );
 			}
 			else
 			{
 				// the border lines end at the beginning of the flyout
 				// the flyout will draw to complete the look
-				//surface()->DrawFilledRectFade( x, y, x + wide, y+2, 0, 255, true );
-				//surface()->DrawFilledRectFade( x, y+tall-2, x + wide, y+tall, 0, 255, true );
+				surface()->DrawFilledRectFade( x, y, x + wide, y+2, 0, 255, true );
+				surface()->DrawFilledRectFade( x, y+tall-2, x + wide, y+tall, 0, 255, true );
 			}
 		}
 		else
 		{
 			// top and bottom border lines
-			//surface()->DrawFilledRectFade( x, y, x + 0.5f * wide, y+2, 0, 255, true );
-			//surface()->DrawFilledRectFade( x + 0.5f * wide, y, x + wide, y+2, 255, 0, true );
-			//surface()->DrawFilledRectFade( x, y+tall-2, x + 0.5f * wide, y+tall, 0, 255, true );
-			//surface()->DrawFilledRectFade( x + 0.5f * wide, y+tall-2, x + wide, y+tall, 255, 0, true );
+			surface()->DrawFilledRectFade( x, y, x + 0.5f * wide, y+2, 0, 255, true );
+			surface()->DrawFilledRectFade( x + 0.5f * wide, y, x + wide, y+2, 255, 0, true );
+			surface()->DrawFilledRectFade( x, y+tall-2, x + 0.5f * wide, y+tall, 0, 255, true );
+			surface()->DrawFilledRectFade( x + 0.5f * wide, y+tall-2, x + wide, y+tall, 255, 0, true );
 		}
 	}
 
@@ -520,8 +504,6 @@ void BaseModHybridButton::PaintButtonEx()
 	if ( bDrawText )
 	{
 		int availableWidth = GetWide() - x - textInsetX;
-		//int centerWidth = GetWide() - x - textInsetX;
-		//int centerX = true;
 
 		if ( m_bShowDropDownIndicator )
 		{
@@ -558,10 +540,8 @@ void BaseModHybridButton::PaintButtonEx()
 			availableWidth -= m_iSelectedArrowSize * 2;
 		}
 
-		// controls the text on a drop down menu, and everywhere else?
 		vgui::surface()->DrawSetTextFont( m_hTextFont );
-		// bad hack to align the button on the flyout menu and on the drop down menu
-		vgui::surface()->DrawSetTextPos( x + textInsetX, y + m_textInsetY - vgui::scheme()->GetProportionalScaledValue( 0.5 ) );
+		vgui::surface()->DrawSetTextPos( x + textInsetX, y + m_textInsetY  );
 		vgui::surface()->DrawSetTextColor( col );
 
 		if ( textWide > availableWidth )
@@ -661,7 +641,7 @@ void BaseModHybridButton::PaintButtonEx()
 		// horizontal right justify
 		int xx = wide - textWide - textInsetX;
 		// vertical center within
-		int yy = ( tall - textTall ) / 2;
+		int yy = ( tall - textTall )/2;
 
 		// draw the drop down selection text
 		vgui::surface()->DrawSetTextFont( m_hSelectionFont );
@@ -735,7 +715,6 @@ void BaseModHybridButton::ApplySettings( KeyValues * inResourceData )
 	}
 
 	// this is a total bypass of the CA look
-	// this is all hardcoded. why.
 	m_nStyle = BUTTON_SIMPLE;
 	V_snprintf( keyString, sizeof( keyString ), "%s.Style", style );
 	const char *pFormatString = scheme->GetResourceString( keyString );
@@ -857,52 +836,6 @@ void BaseModHybridButton::ApplySettings( KeyValues * inResourceData )
 		m_textInsetY = vgui::scheme()->GetProportionalScaledValueEx( GetScheme(), m_textInsetY );
 	}
 
-	// align the text to the middle of the panel along the x axis
-	V_snprintf( keyString, sizeof( keyString ), "%s.%s", style, "TextCenterX" );
-	result = scheme->GetResourceString( keyString );
-	if( atoi( result ) != 0 )
-	{
-		wchar_t szUnicode[512];
-		GetText( szUnicode, sizeof( szUnicode ) );
-		
-		int textWide, textTall;
-		surface()->GetTextSize( m_hTextFont, szUnicode, textWide, textTall );
-		
-		m_textInsetX = ( GetWide() - textWide ) / 2;
-	}
-
-	// align the text to the middle of the panel along the y axis
-	V_snprintf( keyString, sizeof( keyString ), "%s.%s", style, "TextCenterY" );
-	result = scheme->GetResourceString( keyString );
-	if( atoi( result ) != 0 )
-	{
-		// half the panel height - half the font height
-		// actually this is not correct
-		//m_textInsetY = ( ( GetTall() / 2 ) - ( vgui::surface()->GetFontTall( m_hTextFont ) / 2 ) );
-
-		wchar_t szUnicode[512];
-		GetText( szUnicode, sizeof( szUnicode ) );
-		int textWide, textTall;
-		surface()->GetTextSize( m_hTextFont, szUnicode, textWide, textTall );
-
-		// vertical center within
-		m_textInsetY = ( GetTall() - textTall ) / 2;
-	}
-
-	V_snprintf( keyString, sizeof( keyString ), "%s.%s", style, "TextAlignment" );
-	const char *result2 = scheme->GetResourceString( keyString );
-	//if( atoi( result ) != 0 )
-	if( strcmp ( result2, "east" ) == 0 )
-	{
-		wchar_t szUnicode[512];
-		GetText( szUnicode, sizeof( szUnicode ) );
-		
-		int textWide, textTall;
-		surface()->GetTextSize( m_hTextFont, szUnicode, textWide, textTall );
-
-		m_textInsetX = ( GetWide() - textWide ) - m_textInsetX;
-	}
-	
 	//0 = press and release
 	//1 = press
 	//2 = release
@@ -1012,7 +945,8 @@ void BaseModHybridButton::OnKeyCodePressed( vgui::KeyCode code )
 
 	BaseModUI::CBaseModPanel::GetSingleton().SetLastActiveUserId( iJoystick );
 
-	bool bIsPrimaryUser = true;
+	int iController = XBX_GetUserId( iJoystick );
+	bool bIsPrimaryUser = ( iController >= 0 && XBX_GetPrimaryUserId() == DWORD( iController ) );
 
 	KeyCode localCode = GetBaseButtonCode( code );
 
