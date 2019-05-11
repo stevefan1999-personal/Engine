@@ -93,8 +93,10 @@ static ConVar v_centerspeed( "v_centerspeed","500" );
 // 54 degrees approximates a 35mm camera - we determined that this makes the viewmodels
 // and motions look the most natural.
 ConVar v_viewmodel_fov( "viewmodel_fov", "54", FCVAR_CHEAT );
-static ConVar mat_viewportscale( "mat_viewportscale", "1.0", FCVAR_CHEAT, "Scale down the main viewport (to reduce GPU impact on CPU profiling)",
-								  true, (1.0f / 640.0f), true, 1.0f );
+
+ConVar mat_viewportscale( "mat_viewportscale", "1.0", FCVAR_ARCHIVE, "Scale down the main viewport (to reduce GPU impact on CPU profiling)", true, (1.0f / 640.0f), true, 1.0f );
+ConVar mat_viewportupscale( "mat_viewportupscale", "1", FCVAR_ARCHIVE, "Scale the viewport back up" );
+
 ConVar cl_leveloverview( "cl_leveloverview", "0", FCVAR_CHEAT );
 
 static ConVar r_mapextents( "r_mapextents", "16384", FCVAR_CHEAT, 
@@ -812,7 +814,13 @@ void CViewRender::Render( vrect_t *rect )
 	m_View.y				= vr.y;
 	m_View.width			= vr.width * flViewportScale;
 	m_View.height			= vr.height * flViewportScale;
-	m_View.m_flAspectRatio	= ( engineAspectRatio > 0.0f ) ? engineAspectRatio : ( (float)m_View.width / (float)m_View.height );
+
+	m_View.m_nUnscaledX = vr.x;
+	m_View.m_nUnscaledY = vr.y;
+	m_View.m_nUnscaledWidth = vr.width;
+	m_View.m_nUnscaledHeight = vr.height;
+
+	m_View.m_flAspectRatio = ( engineAspectRatio > 0.0f ) ? engineAspectRatio : ( ( float ) m_View.width / ( float ) m_View.height );
 
 	int nClearFlags = VIEW_CLEAR_DEPTH;
 

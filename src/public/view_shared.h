@@ -48,13 +48,17 @@ public:
 // shared by 2D & 3D views
 
 	// left side of view window
-	int			x;					
+	int			x;
+	int			m_nUnscaledX;
 	// top side of view window
-	int			y;					
+	int			y;
+	int			m_nUnscaledY;
 	// width of view window
-	int			width;				
+	int			width;
+	int			m_nUnscaledWidth;
 	// height of view window
-	int			height;				
+	int			height;
+	int			m_nUnscaledHeight;
 
 // the rest are only used by 3D views
 

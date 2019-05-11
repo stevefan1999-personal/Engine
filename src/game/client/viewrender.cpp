@@ -117,6 +117,9 @@ extern ConVar r_flashlightdepthtexture;
 extern ConVar vcollide_wireframe;
 extern ConVar mat_motion_blur_enabled;
 extern ConVar r_depthoverlay;
+extern ConVar mat_viewportscale;
+extern ConVar mat_viewportupscale;
+//extern bool g_bDumpRenderTargets;
 
 //-----------------------------------------------------------------------------
 // Convars related to controlling rendering
@@ -2224,6 +2227,34 @@ void CViewRender::RenderView( const CViewSetup &view, int nClearFlags, int whatT
 			RenderView( tempView, m_OverlayClearFlags, m_OverlayDrawFlags );
 			m_CurrentView = currentView;
 		}
+	}
+
+	if ( mat_viewportupscale.GetBool() && mat_viewportscale.GetFloat() < 1.0f )
+	{
+		CMatRenderContextPtr pRenderContext( materials );
+
+		ITexture* pFullFrameFB1 = materials->FindTexture( "_rt_FullFrameFB1", TEXTURE_GROUP_RENDER_TARGET );
+		IMaterial* pCopyMaterial = materials->FindMaterial( "dev/upscale", TEXTURE_GROUP_OTHER );
+		pCopyMaterial->IncrementReferenceCount();
+
+		Rect_t	DownscaleRect, UpscaleRect;
+
+		DownscaleRect.x = view.x;
+		DownscaleRect.y = view.y;
+		DownscaleRect.width = view.width;
+		DownscaleRect.height = view.height;
+
+		UpscaleRect.x = view.m_nUnscaledX;
+		UpscaleRect.y = view.m_nUnscaledY;
+		UpscaleRect.width = view.m_nUnscaledWidth;
+		UpscaleRect.height = view.m_nUnscaledHeight;
+
+		pRenderContext->CopyRenderTargetToTextureEx( pFullFrameFB1, 0, &DownscaleRect, &DownscaleRect );
+		pRenderContext->DrawScreenSpaceRectangle( pCopyMaterial, UpscaleRect.x, UpscaleRect.y, UpscaleRect.width, UpscaleRect.height,
+			DownscaleRect.x, DownscaleRect.y, DownscaleRect.x + DownscaleRect.width - 1, DownscaleRect.y + DownscaleRect.height - 1,
+			pFullFrameFB1->GetActualWidth(), pFullFrameFB1->GetActualHeight() );
+
+		pCopyMaterial->DecrementReferenceCount();
 	}
 
 	// Draw the 2D graphics
