@@ -29,18 +29,7 @@ static ConVar r_projtex_filtersize( "r_projtex_filtersize", "1.0", 0 );
 
 static ConVar r_projtex_uberlight_enable( "r_projtex_uberlight_enable", "0", 0 );
 
-/*static ConVar r_projtex_r( "r_projtex_r", "10", 0 );
-static ConVar r_projtex_g( "r_projtex_g", "10", 0 );
-static ConVar r_projtex_b( "r_projtex_b", "2", 0 );*/
-
-static ConVar r_projtex_quadratic( "r_projtex_quadratic", "0", 0 );
-static ConVar r_projtex_linear( "r_projtex_linear", "100", 0 );
-static ConVar r_projtex_constant( "r_projtex_constant", "0", 0 );
-
 static ConVar r_projtex_shadowatten( "r_projtex_shadowatten", "0.0", 0 );
-
-/*static ConVar r_projtex_slopescale( "r_projtex_slopescale", "3.0", 0 );
-static ConVar r_projtex_depthbias( "r_projtex_depthbias", "0.00001", 0 );*/
 
 // maybe rename to r_shadowmap_quality or r_shadowmap_sharpness?
 static ConVar r_projtex_quality( "r_projtex_quality", "-1", FCVAR_ARCHIVE,
