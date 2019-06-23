@@ -372,8 +372,8 @@ FORCEINLINE float ShadowFilterFromState( FlashlightState_t const &state )
 
 FORCEINLINE void SetupUberlightFromState( IShaderDynamicAPI *pShaderAPI, FlashlightState_t const &state )
 {
-	// Bail if we can't do ps30 or we don't even want an uberlight
-	if ( !g_pHardwareConfig->HasFastVertexTextures() || !state.m_bUberlight || !pShaderAPI )
+	// Bail if we don't want an uberlight
+	if ( !state.m_bUberlight || !pShaderAPI )
 		return;
 
 	UberlightState_t u = state.m_uberlightState;

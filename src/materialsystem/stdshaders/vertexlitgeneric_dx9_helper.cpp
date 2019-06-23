@@ -1026,13 +1026,27 @@ static void DrawVertexLitGeneric_DX9_Internal( CBaseVSShader *pShader, IMaterial
 				vScreenScale[1] = (float) nHeight / 32.0f;
 				pShaderAPI->SetPixelShaderConstant( 31, vScreenScale, 1 );
 
-				// this should be here, but this whole section is changed in ASW
-				/*if ( !IsX360() && ( g_pHardwareConfig->GetDXSupportLevel() > 92 ) )
-				{
-					pContextData->m_SemiStaticCmdsOut.SetPixelShaderUberLightState( 
-						PSREG_UBERLIGHT_SMOOTH_EDGE_0,		PSREG_UBERLIGHT_SMOOTH_EDGE_1,
-						PSREG_UBERLIGHT_SMOOTH_EDGE_OOW,	PSREG_UBERLIGHT_SHEAR_ROUND, 
-						PSREG_UBERLIGHT_AABB,				PSREG_UBERLIGHT_WORLD_TO_LIGHT );
+				//SetupUberlightFromState( pShaderAPI, flashlightState );
+
+				/*CBCmdSetPixelShaderFlashlightState_t state;
+				state.m_LightSampler = SHADER_SAMPLER7;
+				state.m_DepthSampler = SHADER_SAMPLER8;
+				state.m_ShadowNoiseSampler = SHADER_SAMPLER6;
+				state.m_nColorConstant = 28;
+				state.m_nAttenConstant = 22;
+				state.m_nOriginConstant = 23;
+				state.m_nDepthTweakConstant = 2;
+				state.m_nScreenScaleConstant = 31;
+				state.m_nWorldToTextureConstant = IsX360() ? -1 : 24;
+				state.m_bFlashlightNoLambert = bFlashlightNoLambert;
+				state.m_bSinglePassFlashlight = false; // is true on x360
+				pContextData->m_SemiStaticCmdsOut.SetPixelShaderFlashlightState( state );*/
+
+				/*{
+					pContextData->m_SemiStaticCmdsOut.SetPixelShaderUberLightState(
+						PSREG_UBERLIGHT_SMOOTH_EDGE_0, PSREG_UBERLIGHT_SMOOTH_EDGE_1,
+						PSREG_UBERLIGHT_SMOOTH_EDGE_OOW, PSREG_UBERLIGHT_SHEAR_ROUND,
+						PSREG_UBERLIGHT_AABB, PSREG_UBERLIGHT_WORLD_TO_LIGHT );
 				}*/
 			}
 
@@ -1113,9 +1127,9 @@ static void DrawVertexLitGeneric_DX9_Internal( CBaseVSShader *pShader, IMaterial
 
 		ITexture *pCascadedDepthTexture = NULL;
 		bool bFlashlightShadows = false;
-		//bool bUberlight = false;
+		/*bool bUberlight = false;
 
-		/*if ( bHasFlashlight )
+		if ( bHasFlashlight )
 		{
 			//pShaderAPI->GetFlashlightShaderInfo( &bFlashlightShadows, &bUberlight );
 			bFlashlightShadows = true;

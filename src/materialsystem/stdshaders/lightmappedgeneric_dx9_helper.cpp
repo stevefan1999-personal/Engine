@@ -344,6 +344,8 @@ void DrawLightmappedAdvFlashlight_DX9_Internal( CBaseVSShader *pShader, IMateria
 		SET_DYNAMIC_PIXEL_SHADER_COMBO( UBERLIGHT, flashlightState.m_bUberlight );
 		SET_DYNAMIC_PIXEL_SHADER( lightmappedadv_flashlight_ps30 );
 
+		SetupUberlightFromState( pShaderAPI, flashlightState );
+
 		float atten[4];										// Set the flashlight attenuation factors
 		atten[0] = flashlightState.m_fConstantAtten;
 		atten[1] = flashlightState.m_fLinearAtten;

@@ -30,7 +30,7 @@
 // DYNAMIC: "LIGHTING_PREVIEW"          "0..2"	
 // DYNAMIC: "FLASHLIGHTSHADOWS"			"0..1"	[ps20b] [ps30]
 // DYNAMIC: "CASCADED_SHADOW"			"0..1"  [ps30]
-// DYNAMIC: "UBERLIGHT"					"0..0"  [ps30]
+// DYNAMIC: "UBERLIGHT"					"0..1"  [ps30]
 
 // _DYNAMIC: "STATIC_LIGHT_LIGHTMAP"	    "0..2"  [ps20b] [ps30]
 // _DYNAMIC: "STATIC_LIGHT_LIGHTMAP"	    "0..0"  [ps20]
