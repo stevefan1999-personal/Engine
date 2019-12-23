@@ -15,7 +15,7 @@ jobs:
         uses: snickerbockers/submodules-init@v4
       - name: Install CRC32
         run: |
-          $env:PATH += ;C:\Strawberry\perl\bin
+          $env:PATH += ";C:\Strawberry\perl\bin"
           cpan String::CRC32
       - name: Generate all projects
         run: |
