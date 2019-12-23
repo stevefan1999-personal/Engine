@@ -13,15 +13,21 @@ jobs:
       - 
         name: Checkout submodules
         uses: snickerbockers/submodules-init@v4
-      - name: Install CRC32
+      - 
+        name: Install CRC32
         run: |
           $env:Path = "C:\Strawberry\perl\bin;" + $env:Path
           cpan String::CRC32
-      - name: Generate all projects
+      - 
+        name: Setup MSBuild.exe
+        uses: warrenbuckley/Setup-MSBuild@v1
+      - 
+        name: Generate all projects
         run: |
           ls
           '.\src\createallprojects.bat'
-      - name: Build all core projects
+      - 
+        name: Build all core projects
         run: |
           msbuild .\src\core.sln /t:Build /p:Configuration=Release
       - 
