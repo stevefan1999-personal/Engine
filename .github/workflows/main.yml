@@ -18,7 +18,7 @@ jobs:
       - 
         name: Install CRC32
         run: |
-          $env:Path = "C:\Strawberry\perl\bin;" + $env:Path
+          [Environment]::SetEnvironmentVariable("Path", "C:\Strawberry\perl\bin;" + $env:Path, "Machine")
           cpan String::CRC32
       - 
         name: Add registry key(s)
