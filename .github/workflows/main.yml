@@ -37,10 +37,15 @@ jobs:
         run: |
           .\createallprojects.bat
       - 
+        name: Generate core projects
+        working-directory: src
+        run: |
+          .\createcoreprojects.bat
+      - 
         name: Build all core projects
         working-directory: src
         run: |
-          msbuild everything.sln /t:Build /p:Configuration=Release
+          msbuild core.sln /t:Build /p:Configuration=Release
       - 
         name: Build all shaders
         working-directory: src/materialsystem/stdshaders
