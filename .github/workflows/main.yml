@@ -28,8 +28,8 @@ jobs:
           .\createallprojects.bat
       - 
         name: Build all core projects
+        working-directory: src
         run: |
-          working-directory: src
           msbuild core.sln /t:Build /p:Configuration=Release
       - 
         name: Build all shaders
