@@ -46,6 +46,12 @@ jobs:
         working-directory: src
         run: |
           devenv core.sln /Build "Release|x86"
+      - name: Cache shaders
+        id: cache-shaders
+        uses: actions/cache@v1
+        with:
+          path: src/materialsystem/stdshaders/shaders
+          key: ${{ runner.os }}-shaders
       -
         name: Build all shaders
         working-directory: src/materialsystem/stdshaders
