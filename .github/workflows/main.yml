@@ -4,8 +4,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: [self-hosted, windows-latest]
-
+    runs-on: [windows-latest, self-hosted]
     steps:
       -
         name: Checkout source code
@@ -14,13 +13,13 @@ jobs:
         name: Checkout submodules
         uses: snickerbockers/submodules-init@v4
       - 
+        name: Setup VS Dev Environment
+        uses: seanmiddleditch/gha-setup-vsdevenv@v1
+      - 
         name: Install CRC32
         run: |
           $env:Path = "C:\Strawberry\perl\bin;" + $env:Path
           cpan String::CRC32
-      - 
-        name: Setup VS Dev Environment
-        uses: seanmiddleditch/gha-setup-vsdevenv@v1
       - 
         name: Add registry key(s)
         run: |
