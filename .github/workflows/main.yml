@@ -19,10 +19,11 @@ jobs:
           cpan String::CRC32
       - name: Generate all projects
         run: |
-          .\src\createallprojects.bat
+          ls
+          '.\src\createallprojects.bat'
       - name: Build all core projects
         run: |
-          msbuild .src\core.sln /t:Build /p:Configuration=Release
+          msbuild .\src\core.sln /t:Build /p:Configuration=Release
       - 
         name: Build all shaders
         run: |
