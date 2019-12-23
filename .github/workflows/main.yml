@@ -23,14 +23,16 @@ jobs:
         uses: warrenbuckley/Setup-MSBuild@v1
       - 
         name: Generate all projects
+        working-directory: src
         run: |
-          ls
-          '.\src\createallprojects.bat'
+          .\createallprojects.bat
       - 
         name: Build all core projects
         run: |
-          msbuild .\src\core.sln /t:Build /p:Configuration=Release
+          working-directory: src
+          msbuild core.sln /t:Build /p:Configuration=Release
       - 
         name: Build all shaders
+        working-directory: src/materialsystem/stdshaders
         run: |
-          .\src\materialsystem\stdshaders\_buildallshaders.bat
+          .\_buildallshaders.bat
