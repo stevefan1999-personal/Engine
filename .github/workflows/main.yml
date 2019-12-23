@@ -1,0 +1,30 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      -
+        name: Checkout source code
+        uses: actions/checkout@v1
+      - 
+        name: Checkout submodules
+        uses: textbook/git-checkout-submodule-action@2.0.0
+      - 
+        name: Install Perl
+        uses: crazy-max/ghaction-chocolatey@v1.0.2
+        with:
+          # Arguments to pass to Chocolatey
+          args: install strawberryperl
+      - name: Install CRC32
+        run: |
+          cpan String::CRC32
+      - name: Run create core project
+        run: |
+          src/createcoreprojects.bat
+      - name: Run create core project
+        run: |
+          src/createcoreprojects.bat
