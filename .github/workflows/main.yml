@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v1
       - 
         name: Checkout submodules
-        uses: textbook/git-checkout-submodule-action@2.0.0
+        uses: snickerbockers/submodules-init@v4
       - 
         name: Install Perl
         uses: crazy-max/ghaction-chocolatey@v1.0.2
