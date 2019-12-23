@@ -22,6 +22,16 @@ jobs:
         name: Setup MSBuild.exe
         uses: warrenbuckley/Setup-MSBuild@v1
       - 
+        name: Add registry key(s)
+        run: |
+          $path = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\10.0\Projects\{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}"
+
+          if (!(Test-Path $path)) {
+            New-Item $path -Force;
+          }
+
+          New-ItemProperty -Path $path -Name "DefaultProjectExtension" -Value "vcproj" -PropertyType String -Force
+      - 
         name: Generate all projects
         working-directory: src
         run: |
