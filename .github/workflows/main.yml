@@ -13,15 +13,9 @@ jobs:
       - 
         name: Checkout submodules
         uses: snickerbockers/submodules-init@v4
-      - 
-        name: Install Perl
-        uses: crazy-max/ghaction-chocolatey@v1.0.2
-        with:
-          # Arguments to pass to Chocolatey
-          args: install strawberryperl
       - name: Install CRC32
         run: |
-          refreshenv
+          set PATH=%PATH%;C:\Strawberry\perl\bin
           cpan String::CRC32
       - name: Generate all projects
         run: |
