@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: [windows-latest,self-hosted]
 
     steps:
       -
@@ -19,8 +19,8 @@ jobs:
           $env:Path = "C:\Strawberry\perl\bin;" + $env:Path
           cpan String::CRC32
       - 
-        name: Setup MSBuild.exe
-        uses: warrenbuckley/Setup-MSBuild@v1
+        name: Setup VS Dev Environment
+        uses: seanmiddleditch/gha-setup-vsdevenv@v1
       - 
         name: Add registry key(s)
         run: |
@@ -45,7 +45,8 @@ jobs:
         name: Build all core projects
         working-directory: src
         run: |
-          msbuild core.sln /t:Build /p:Configuration=Release
+          devenv core.sln /upgrade
+          msbuild core.sln /t:Build /p:Configuration=Release -m
       - 
         name: Build all shaders
         working-directory: src/materialsystem/stdshaders
