@@ -18,7 +18,8 @@ jobs:
       - 
         name: Install CRC32
         run: |
-          [Environment]::SetEnvironmentVariable("Path", "C:\Strawberry\perl\bin;" + $env:Path, "Machine")
+          $env:Path = "C:\Strawberry\perl\bin;" + $env:Path
+          [Environment]::SetEnvironmentVariable("Path", "C:\Strawberry\perl\bin;" + $env:Path, "User")
           cpan String::CRC32
       - 
         name: Add registry key(s)
@@ -49,4 +50,5 @@ jobs:
         name: Build all shaders
         working-directory: src/materialsystem/stdshaders
         run: |
+          $env:Path = "C:\Strawberry\perl\bin;" + $env:Path
           .\_buildallshaders.bat
