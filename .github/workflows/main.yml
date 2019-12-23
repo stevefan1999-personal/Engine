@@ -44,9 +44,8 @@ jobs:
         name: Build all core projects
         working-directory: src
         run: |
-          devenv core.sln /upgrade
-          msbuild core.sln /t:Build /p:Configuration="Release;Architecture=x86;Platform=x86" /m
-      - 
+          devenv core.sln /Build "Release|x86"
+      -
         name: Build all shaders
         working-directory: src/materialsystem/stdshaders
         run: |
